@@ -1,4 +1,21 @@
-module Color exposing (black, blue, darkBlue, darkCharcoal, darkGreen, green, grey, lightBlue, lightCharcoal, lightGrey, offBlack, offWhite, orange)
+module Color exposing
+    ( black
+    , blue
+    , darkBlue
+    , darkCharcoal
+    , darkGreen
+    , green
+    , grey
+    , lightBlue
+    , lightCharcoal
+    , lightGrey
+    , offBlack
+    , offWhite
+    , orange
+    , paleBlue
+    , paleGreen
+    , white
+    )
 
 import Element exposing (rgb255)
 
@@ -57,3 +74,15 @@ offWhite =
 
 orange =
     rgb255 242 100 25
+
+
+paleBlue =
+    rgb255 162 229 249
+
+
+paleGreen =
+    rgb255 167 193 176
+
+
+white =
+    rgb255 255 255 255
