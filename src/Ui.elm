@@ -1,4 +1,4 @@
-module Ui exposing (heading2, headingTypeface, logo, mainTypeface, menuIcon, smallFont)
+module Ui exposing (..)
 
 import Color exposing (..)
 import Element exposing (..)
@@ -32,9 +32,14 @@ smallFont =
     Font.size <| round <| fontScale -1
 
 
-heading2 : List (Attribute msg) -> Element msg -> Element msg
+heading1 : List (Attribute msg) -> List (Element msg) -> Element msg
+heading1 attrs =
+    paragraph ([ Font.size <| round <| fontScale 4, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 1 ] ++ attrs)
+
+
+heading2 : List (Attribute msg) -> List (Element msg) -> Element msg
 heading2 attrs =
-    el ([ Font.size <| round <| fontScale 3, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 2 ] ++ attrs)
+    paragraph ([ Font.size <| round <| fontScale 3, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 2 ] ++ attrs)
 
 
 logo : List (Attribute msg) -> Element msg -> Element msg
@@ -42,8 +47,9 @@ logo attrs =
     el ([ Font.size 24, Font.color lightCharcoal, logoTypeface ] ++ attrs)
 
 
-menuIcon =
-    textColumn [ width <| px 30, alignRight, spacing -17, logoTypeface, Font.size 20, Font.color green ]
+menuIcon : List (Attribute msg) -> Element msg
+menuIcon attrs =
+    textColumn ([ width <| px 30, alignRight, spacing -17, logoTypeface, Font.size 20, Font.color green ] ++ attrs)
         [ paragraph [] [ text "—" ]
         , paragraph [] [ text "—" ]
         , paragraph [] [ text "—" ]

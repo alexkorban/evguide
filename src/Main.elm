@@ -5,6 +5,7 @@ import Browser.Events exposing (onResize)
 import Browser.Navigation as Nav
 import Color exposing (..)
 import Cons exposing (Cons)
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -12,6 +13,7 @@ import Element.Events exposing (..)
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import ElmMarkup
 import Html exposing (Html)
 import List.Extra as List
 import Types exposing (..)
@@ -37,12 +39,17 @@ type GuideRoute
 type Msg
     = RuntimeChangedUrl Url
     | UserClickedLink UrlRequest
+    | UserClickedMenuIcon
+    | UserClickedOutsideMenuPanel
     | UserResizedWindow Int Int
 
 
 type alias Model =
-    { navKey : Nav.Key
+    { isMenuPanelOpen : Bool
+    , navKey : Nav.Key
+    , pageText : Dict String (Element Msg)
     , route : GuideRoute
+    , vehicleText : Dict String (Element Msg)
     , windowHeight : Int
     , windowWidth : Int
     }
@@ -67,8 +74,11 @@ routeParser =
 
 init : Flags -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url navKey =
-    ( { navKey = navKey
+    ( { isMenuPanelOpen = False
+      , navKey = navKey
+      , pageText = Result.withDefault Dict.empty <| ElmMarkup.markupToEls pageText
       , route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url
+      , vehicleText = Result.withDefault Dict.empty <| ElmMarkup.markupToEls vehicleText
       , windowHeight = flags.windowHeight
       , windowWidth = flags.windowWidth
       }
@@ -109,7 +119,7 @@ vehicleCard vehicle =
                 |> column [ width fill, spacing 5 ]
     in
     link []
-        { url = "/vehicles/" ++ dasherise vehicle.make ++ "/" ++ dasherise vehicle.model ++ "/" ++ (String.fromInt <| rangeFrom vehicle.years)
+        { url = "/vehicles/" ++ id vehicle
         , label =
             column
                 [ width <| px vehicleCardWidth
@@ -119,7 +129,7 @@ vehicleCard vehicle =
                 , Border.color green
                 , Border.shadow { offset = ( 1, 1 ), blur = 3, color = grey, size = 0.3 }
                 ]
-                [ Ui.heading2 [] <| text makeModel
+                [ Ui.heading2 [] [ text makeModel ]
                 , el [ padding 1, Border.rounded 2, Border.width 1, Border.color Color.grey ] <|
                     image [ width <| px 300 ] { src = imageUrl, description = makeModel }
                 , specSummary
@@ -143,11 +153,11 @@ vehicleDetails model vehicle =
                 ]
 
         heading =
-            Ui.heading2 [ paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text (vehicle.make ++ " " ++ vehicle.model)
+            Ui.heading1 [ paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] [ text (vehicle.make ++ " " ++ vehicle.model) ]
 
         description =
             paragraph [ width <| fillPortion 3 ]
-                [ text "some kind of text" ]
+                [ Maybe.withDefault (text "") <| Dict.get (id vehicle) model.vehicleText ]
 
         spec =
             [ ( "Range", rangeAsString vehicle.range )
@@ -159,9 +169,9 @@ vehicleDetails model vehicle =
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
                 |> flip column
     in
-    if model.windowWidth > 600 then
+    if model.windowWidth > 700 then
         [ vehicleImage
-        , row [ width <| maximum 800 fill, centerX ]
+        , row [ width <| maximum 800 fill, centerX, spacing 10 ]
             [ column
                 [ width fill
                 , alignTop
@@ -198,7 +208,7 @@ vehicleDetails model vehicle =
             [ width <| maximum 300 fill
             , centerX
             , spacing 5
-            , paddingEach { bottom = 20, top = 0, left = 0, right = 0 }
+            , paddingEach { bottom = 30, top = 0, left = 0, right = 0 }
             ]
         , description
         ]
@@ -207,8 +217,13 @@ vehicleDetails model vehicle =
 navigationLinks : List { url : String, label : Element Msg }
 navigationLinks =
     [ { url = "/why-ev", label = text "Why EV" }
-    , { url = "/ev-cost", label = text "Running costs" }
+    , { url = "/running-costs", label = text "Running costs" }
     ]
+
+
+navigationMenuLinks : List { url : String, label : Element Msg }
+navigationMenuLinks =
+    { url = "/", label = text "Vehicles" } :: navigationLinks
 
 
 navigation : Model -> Element Msg
@@ -216,7 +231,7 @@ navigation model =
     let
         menu =
             if model.windowWidth < 2 * vehicleCardWidth + 2 * mainContentMargin then
-                [ Ui.menuIcon ]
+                [ Ui.menuIcon [ onClick UserClickedMenuIcon ] ]
 
             else
                 List.map (\navLink -> link [ alignRight, Font.size 14, Font.color green ] navLink) navigationLinks
@@ -236,9 +251,34 @@ navigation model =
             none
 
           else
-            Ui.heading2 [ Font.color orange ] <| text "Vehicle comment overflow"
+            Ui.heading2 [ Font.color orange ] [ text "Vehicle comment overflow" ]
         , el [ width fill, height <| px 1, Background.color lightBlue ] none
         , el [ width fill, height <| px 10 ] none
+        ]
+
+
+navigationMenu : Element Msg
+navigationMenu =
+    row [ width fill, height fill ]
+        [ el
+            [ width fill
+            , height fill
+            , onClick UserClickedOutsideMenuPanel
+            , Background.color <| rgba255 11 79 108 0.4
+            ]
+            none
+        , column
+            [ width <| px 200
+            , height fill
+            , padding 15
+            , spacing 15
+            , Background.color offWhite
+            , Border.widthEach { left = 4, right = 0, top = 0, bottom = 0 }
+            , Border.color paleBlue
+            , Border.shadow { offset = ( 0, 0 ), blur = 10, color = blue, size = 0.5 }
+            ]
+          <|
+            List.map (\navLink -> link [ alignRight, Font.size 18, Font.bold, Font.color green ] navLink) navigationMenuLinks
         ]
 
 
@@ -246,7 +286,7 @@ footer : Model -> Element Msg
 footer model =
     let
         footerLinks =
-            navigationLinks ++ [ { url = "/contact", label = text "Contact" } ]
+            navigationMenuLinks ++ [ { url = "/contact", label = text "Contact" } ]
 
         isNarrow =
             model.windowWidth < vehicleCardWidth * 2 + mainContentMargin * 2
@@ -376,16 +416,24 @@ view model =
                             vehicleDetails model vehicle
 
                         Nothing ->
-                            [ Ui.heading2 [] <| text "Unknown vehicle" ]
+                            [ Ui.heading1 [] [ text "Unknown vehicle" ] ]
 
-                PageRoute "about" ->
-                    [ Ui.heading2 [] <| text "About" ]
-
-                PageRoute _ ->
-                    [ Ui.heading2 [] <| text "Unknown page" ]
+                PageRoute pageId ->
+                    [ el [ width <| maximum 800 fill, centerX, paddingXY 0 20 ] <|
+                        Maybe.withDefault (Ui.heading1 [] [ text ("Unknown page " ++ pageId) ]) <|
+                            Dict.get pageId model.pageText
+                    ]
     in
-    layout [ Ui.mainTypeface ] <|
-        column [ width fill ] <|
+    layout [ Ui.mainTypeface, Font.size 16 ] <|
+        column
+            [ width fill
+            , if model.isMenuPanelOpen then
+                inFront navigationMenu
+
+              else
+                padding 0
+            ]
+        <|
             [ navigation model, column [ width fill, paddingEach { left = 5, right = 5, top = 0, bottom = 0 } ] content, footer model ]
 
 
@@ -398,13 +446,19 @@ update msg model =
         UserClickedLink urlRequest ->
             case urlRequest of
                 Internal url ->
-                    ( model, Nav.pushUrl model.navKey <| Url.toString url )
+                    ( { model | isMenuPanelOpen = False }, Nav.pushUrl model.navKey <| Url.toString url )
 
                 External url ->
                     ( model, Nav.load url )
 
+        UserClickedMenuIcon ->
+            ( { model | isMenuPanelOpen = True }, Cmd.none )
+
+        UserClickedOutsideMenuPanel ->
+            ( { model | isMenuPanelOpen = False }, Cmd.none )
+
         UserResizedWindow width height ->
-            ( { model | windowHeight = height, windowWidth = width }, Cmd.none )
+            ( { model | windowHeight = height, windowWidth = width, isMenuPanelOpen = False }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -422,3 +476,25 @@ main =
         , onUrlRequest = UserClickedLink
         , onUrlChange = RuntimeChangedUrl
         }
+
+
+pageText : String
+pageText =
+    """
+|> Page 
+    id = why-ev
+    text = 
+        |> H1 
+            Why EV?
+
+        The benefits of an EV are...
+
+
+|> Page
+    id = running-costs
+    text =
+        |> H1
+            Running costs 
+        
+        The running costs are...
+"""
