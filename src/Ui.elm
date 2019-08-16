@@ -42,6 +42,16 @@ heading2 attrs =
     paragraph ([ Font.size <| round <| fontScale 3, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 2 ] ++ attrs)
 
 
+heading3 : List (Attribute msg) -> List (Element msg) -> Element msg
+heading3 attrs =
+    paragraph ([ Font.size <| round <| fontScale 2, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 3 ] ++ attrs)
+
+
+heading4 : List (Attribute msg) -> List (Element msg) -> Element msg
+heading4 attrs =
+    paragraph ([ Font.size <| round <| fontScale 1, Font.bold, Font.color darkBlue, headingTypeface, Region.heading 4 ] ++ attrs)
+
+
 logo : List (Attribute msg) -> Element msg -> Element msg
 logo attrs =
     el ([ Font.size 24, Font.color lightCharcoal, logoTypeface ] ++ attrs)
@@ -54,3 +64,8 @@ menuIcon attrs =
         , paragraph [] [ text "—" ]
         , paragraph [] [ text "—" ]
         ]
+
+
+listIcon : List (Attribute msg) -> Element msg
+listIcon attrs =
+    el ([ Font.size 16, logoTypeface ] ++ attrs) <| text "•"

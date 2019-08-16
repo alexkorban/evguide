@@ -1,9 +1,14 @@
-module Types exposing (SingleOrPair(..), VehicleMake, VehicleModel, Year, rangeFrom)
+module Types exposing (..)
 
 
 type SingleOrPair a
     = Single a
     | Range a a
+    | RangeFrom a
+
+
+type alias VehicleId =
+    String
 
 
 type alias VehicleMake =
@@ -24,5 +29,8 @@ rangeFrom range =
         Single a ->
             a
 
-        Range a b ->
+        Range a _ ->
+            a
+
+        RangeFrom a ->
             a

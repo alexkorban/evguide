@@ -1,11 +1,11 @@
-module Util exposing (asMoneyStr, dasherise, equalBy, flip, undasherise)
+module Util exposing (..)
 
 import FormatNumber exposing (format)
 import String.Extra as String
 
 
-asMoneyStr : Int -> String
-asMoneyStr n =
+intAsMoneyStr : Int -> String
+intAsMoneyStr n =
     "$"
         ++ (format
                 { decimals = 0
@@ -19,6 +19,11 @@ asMoneyStr n =
             <|
                 toFloat n
            )
+
+
+intListAsString : List Int -> String
+intListAsString list =
+    String.join ", " <| List.map String.fromInt list
 
 
 dasherise : String -> String
