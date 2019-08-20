@@ -9,6 +9,7 @@ import Html
 import Html.Attributes as Attr
 import Mark exposing (Block, Document)
 import Mark.Error
+import Types exposing (..)
 import Ui
 
 
@@ -22,7 +23,7 @@ para =
     paragraph [ spacing 15 ]
 
 
-markupToEls : String -> Result (List String) (Dict String (Element msg))
+markupToEls : String -> Result (List String) (PageDict msg)
 markupToEls markup =
     case Mark.compile document markup of
         Mark.Success dict ->
@@ -37,7 +38,7 @@ markupToEls markup =
             Err <| List.map Mark.Error.toString errors
 
 
-document : Document (Dict String (Element msg))
+document : Document (PageDict msg)
 document =
     Mark.document Dict.fromList <| Mark.manyOf [ pageBlock ]
 
@@ -89,10 +90,16 @@ styledText styles string =
         text string
 
 
-pageBlock : Block ( String, Element msg )
+pageBlock : Block ( String, Size -> Element msg )
 pageBlock =
     Mark.record "Page"
-        (\id textEls -> ( id, textColumn [ spacing 20, width <| minimum 300 fill ] textEls ))
+        (\id textElFuncs ->
+            ( id
+            , \windowSize ->
+                textColumn [ spacing 20, width <| minimum 300 fill ] <|
+                    List.map ((|>) windowSize) textElFuncs
+            )
+        )
         |> Mark.field "id" Mark.string
         |> Mark.field "text"
             (Mark.manyOf
@@ -103,7 +110,7 @@ pageBlock =
                 , iframe
                 , image
                 , list
-                , Mark.map para inlineMarkup
+                , Mark.map (\els -> always <| para els) inlineMarkup
                 ]
             )
         |> Mark.toBlock
@@ -113,27 +120,40 @@ pageBlock =
 {- Handle Blocks -}
 
 
+heading1 : Block (Size -> Element msg)
 heading1 =
-    Mark.block "H1" (\children -> Ui.heading1 [] children) inlineMarkup
+    Mark.block "H1" (\children -> \_ -> Ui.heading1 [] children) inlineMarkup
 
 
+heading2 : Block (Size -> Element msg)
 heading2 =
-    Mark.block "H2" (\children -> Ui.heading2 [] children) inlineMarkup
+    Mark.block "H2" (\children -> \_ -> Ui.heading2 [] children) inlineMarkup
 
 
+heading3 : Block (Size -> Element msg)
 heading3 =
-    Mark.block "H3" (\children -> Ui.heading3 [] children) inlineMarkup
+    Mark.block "H3" (\children -> \_ -> Ui.heading3 [] children) inlineMarkup
 
 
+heading4 : Block (Size -> Element msg)
 heading4 =
-    Mark.block "H4" (\children -> Ui.heading4 [] children) inlineMarkup
+    Mark.block "H4" (\children -> \_ -> Ui.heading4 [] children) inlineMarkup
 
 
+iframe : Block (Size -> Element msg)
 iframe =
     Mark.record "Iframe"
         (\url heightPx ->
-            Element.html <|
-                Html.iframe [ Attr.src url, Attr.height heightPx, Attr.style "width" "100%" ] []
+            \windowSize ->
+                Element.html <|
+                    Html.iframe
+                        [ Attr.src url
+                        , Attr.height <| min heightPx windowSize.height
+                        , Attr.style "margin" "20px 0 20px 0"
+                        , Attr.style "width" "100%"
+                        , Attr.style "box-sizing" "border-box"
+                        ]
+                        []
         )
         |> Mark.field "url" Mark.string
         |> Mark.field "height" Mark.int
@@ -162,28 +182,60 @@ strToAlign s =
                 }
 
 
+image : Block (Size -> Element msg)
 image =
     Mark.record "Image"
         (\url description widthPx align border ->
-            let
-                alignment =
-                    case align of
-                        Left ->
-                            alignLeft
+            \windowSize ->
+                let
+                    imageIsWide =
+                        windowSize.width - widthPx < 300
 
-                        Right ->
-                            alignRight
+                    alignment =
+                        case align of
+                            Left ->
+                                if imageIsWide then
+                                    centerX
 
-                        Center ->
-                            centerX
-            in
-            case border of
-                False ->
-                    Element.image [ width <| maximum widthPx fill, alignment ] { src = url, description = description }
+                                else
+                                    alignLeft
 
-                True ->
-                    el [ width <| maximum (widthPx + 2) fill, alignment, padding 1, Border.rounded 2, Border.width 1, Border.color Color.grey ] <|
-                        Element.image [ width fill ] { src = url, description = description }
+                            Right ->
+                                if imageIsWide then
+                                    centerX
+
+                                else
+                                    alignRight
+
+                            Center ->
+                                centerX
+
+                    imageParams =
+                        { src = url, description = description }
+
+                    imageEl alignAttr =
+                        case border of
+                            False ->
+                                Element.image [ width <| maximum widthPx fill, alignAttr ] imageParams
+
+                            True ->
+                                el [ width <| maximum (widthPx + 2) fill, alignAttr ] <|
+                                    el
+                                        [ width <| maximum (widthPx + 2) fill
+                                        , alignTop
+                                        , padding 1
+                                        , Border.rounded 2
+                                        , Border.width 1
+                                        , Border.color Color.grey
+                                        ]
+                                    <|
+                                        Element.image [ width fill ] imageParams
+                in
+                if alignment == centerX then
+                    el [ width fill ] <| imageEl centerX
+
+                else
+                    imageEl alignment
         )
         |> Mark.field "url" Mark.string
         |> Mark.field "description" Mark.string
@@ -193,33 +245,20 @@ image =
         |> Mark.toBlock
 
 
-
--- code =
---     Mark.record "Code"
---         (\lang str ->
---             Html.pre [] [ Html.code [ Attr.class lang ] [ Html.text str ] ]
---         )
---         |> Mark.field "lang" Mark.string
---         |> Mark.field "code" Mark.string
---         |> Mark.toBlock
-{- Handling bulleted and numbered lists - taken from elm-markup examples -}
-
-
-list : Mark.Block (Element msg)
-list =
-    Mark.tree "List" renderList (Mark.map para inlineMarkup)
-
-
-
-{- Note: we have to define this as a separate function because
-   -- `Items` and `Node` are a pair of mutually recursive data structures.
-   -- It's easiest to render them using two separate functions:
-   -- renderList and renderItem
+{-| Handling bulleted and numbered lists - taken from elm-markup examples
 -}
+list : Block (Size -> Element msg)
+list =
+    Mark.tree "List" renderList <| Mark.map para inlineMarkup
 
 
-renderList : Mark.Enumerated (Element msg) -> Element msg
-renderList (Mark.Enumerated enum) =
+{-| Note: we have to define this as a separate function because
+-- `Items` and `Node` are a pair of mutually recursive data structures.
+-- It's easiest to render them using two separate functions:
+-- renderList and renderItem
+-}
+renderList : Mark.Enumerated (Element msg) -> Size -> Element msg
+renderList (Mark.Enumerated enum) windowSize =
     let
         group =
             case enum.icon of
@@ -230,15 +269,15 @@ renderList (Mark.Enumerated enum) =
                     column
     in
     group [ spacing 15, paddingXY 20 0 ]
-        (List.map renderItem enum.items)
+        (List.map (renderItem windowSize) enum.items)
 
 
-renderItem : Mark.Item (Element msg) -> Element msg
-renderItem (Mark.Item item) =
+renderItem : Size -> Mark.Item (Element msg) -> Element msg
+renderItem windowSize (Mark.Item item) =
     row [ width fill, spacingXY 10 0 ]
         [ Ui.listIcon [ alignTop ]
         , column [ width fill ]
             [ para item.content
-            , renderList item.children
+            , renderList item.children windowSize
             ]
         ]

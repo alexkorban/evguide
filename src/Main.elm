@@ -48,11 +48,10 @@ type alias Model =
     { isMenuPanelOpen : Bool
     , markupErrors : List String
     , navKey : Nav.Key
-    , pageText : Dict String (Element Msg)
+    , pageText : PageDict Msg
     , route : GuideRoute
-    , vehicleText : Dict String (Element Msg)
-    , windowHeight : Int
-    , windowWidth : Int
+    , vehicleText : PageDict Msg
+    , windowSize : Size
     }
 
 
@@ -102,8 +101,7 @@ init flags url navKey =
       , pageText = Result.withDefault Dict.empty pageTextRes
       , route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url
       , vehicleText = Result.withDefault Dict.empty vehicleTextRes
-      , windowHeight = flags.windowHeight
-      , windowWidth = flags.windowWidth
+      , windowSize = { height = flags.windowHeight, width = flags.windowWidth }
       }
     , Cmd.none
     )
@@ -178,9 +176,12 @@ vehicleDetails model vehicle =
         heading =
             Ui.heading1 [ paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] [ text (vehicle.make ++ " " ++ vehicle.model) ]
 
+        vehicleTextEl =
+            Maybe.withDefault (always <| text "") <| Dict.get (id vehicle) model.vehicleText
+
         description =
             paragraph [ width <| fillPortion 3 ]
-                [ Maybe.withDefault (text "") <| Dict.get (id vehicle) model.vehicleText ]
+                [ vehicleTextEl model.windowSize ]
 
         spec =
             [ ( "Range", rangeAsString vehicle.range )
@@ -194,7 +195,7 @@ vehicleDetails model vehicle =
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
                 |> flip column
     in
-    if model.windowWidth > 700 then
+    if model.windowSize.width > 700 then
         [ vehicleImage
         , row [ width <| maximum 800 fill, centerX, spacing 10 ]
             [ column
@@ -211,7 +212,7 @@ vehicleDetails model vehicle =
                 , Border.widthEach
                     { left = 4
                     , right =
-                        if model.windowWidth > 820 then
+                        if model.windowSize.width > 820 then
                             4
 
                         else
@@ -247,7 +248,9 @@ navigationLinks =
     , { url = "/running-costs", label = text "Running costs" }
     , { url = "/charging", label = text "Charging" }
     , { url = "/batteries", label = text "Batteries" }
+    , { url = "/buying", label = text "Buying" }
     , { url = "/nz-policies", label = text "NZ policies" }
+    , { url = "/resources", label = text "Resources" }
     ]
 
 
@@ -262,7 +265,7 @@ navigation : Model -> Element Msg
 navigation model =
     let
         pageLinks =
-            if model.windowWidth < 2 * vehicleCardWidth + 2 * mainContentMargin then
+            if model.windowSize.width < 2 * vehicleCardWidth + 8 * mainContentMargin then
                 [ Ui.menuIcon [ onClick UserClickedMenuIcon ] ]
 
             else
@@ -305,7 +308,7 @@ navigationMenuPanel =
             , Border.shadow { offset = ( 0, 0 ), blur = 10, color = blue, size = 0.5 }
             ]
           <|
-            List.map (\navLink -> link [ alignRight, Font.size 18, Font.bold, Font.color green ] navLink) navigationMenuLinks
+            List.map (\navLink -> link [ alignRight, Font.size 18, Font.color green ] navLink) navigationMenuLinks
         ]
 
 
@@ -319,7 +322,7 @@ footer model =
                    ]
 
         isNarrow =
-            model.windowWidth < vehicleCardWidth * 2 + mainContentMargin * 2
+            model.windowSize.width < vehicleCardWidth * 2 + mainContentMargin * 2
     in
     column
         [ Region.footer
@@ -383,7 +386,7 @@ footer model =
                     footerLinks
             , column
                 [ width
-                    (if model.windowWidth < vehicleCardWidth * 3 + mainContentMargin * 2 then
+                    (if model.windowSize.width < vehicleCardWidth * 3 + mainContentMargin * 2 then
                         px 0
 
                      else
@@ -435,7 +438,7 @@ view model =
                 (Vehicle.data
                     |> Cons.toList
                     |> List.map vehicleCard
-                    |> List.greedyGroupsOf (max ((model.windowWidth - mainContentMargin * 2) // vehicleCardWidth) 1)
+                    |> List.greedyGroupsOf (max ((model.windowSize.width - mainContentMargin * 2) // vehicleCardWidth) 1)
                     |> List.map (row [ spacing 8 ])
                 )
             ]
@@ -448,7 +451,7 @@ view model =
                 InfoPageRoute pageId ->
                     case Dict.get pageId model.pageText of
                         Just pageText ->
-                            [ el [ width <| maximum 800 fill, centerX, paddingXY 0 20 ] pageText ]
+                            [ el [ width <| maximum 800 fill, centerX, paddingXY 0 20 ] <| pageText model.windowSize ]
 
                         Nothing ->
                             indexPageContent
@@ -463,29 +466,32 @@ view model =
     in
     layout [ Ui.mainTypeface, Font.size 16 ] <|
         column
-            [ width fill
-            , if model.isMenuPanelOpen then
-                inFront navigationMenuPanel
+            ([ [ width fill ]
+             , if model.isMenuPanelOpen then
+                [ inFront navigationMenuPanel ]
 
-              else
-                -- dummy attr
-                padding 0
-            ]
+               else
+                []
+             ]
+                |> List.concat
+            )
         <|
-            [ navigation model
-            , if allCommentsShort then
-                none
+            ([ [ navigation model ]
+             , if allCommentsShort then
+                []
 
-              else
-                Ui.heading2 [ Font.color orange ] [ text "Vehicle comment overflow" ]
-            , if not <| List.isEmpty model.markupErrors then
-                textColumn [ Font.color orange ] <| List.map text model.markupErrors
+               else
+                [ Ui.heading2 [ Font.color orange ] [ text "Vehicle comment overflow" ] ]
+             , if not <| List.isEmpty model.markupErrors then
+                [ textColumn [ Font.color orange ] <| List.map text model.markupErrors ]
 
-              else
-                none
-            , column [ width fill, paddingEach { left = 5, right = 5, top = 0, bottom = 0 } ] content
-            , footer model
-            ]
+               else
+                []
+             , [ column [ width fill, paddingEach { left = 5, right = 5, top = 0, bottom = 0 } ] content ]
+             , [ footer model ]
+             ]
+                |> List.concat
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -509,7 +515,7 @@ update msg model =
             ( { model | isMenuPanelOpen = False }, Cmd.none )
 
         UserResizedWindow width height ->
-            ( { model | windowHeight = height, windowWidth = width, isMenuPanelOpen = False }, Cmd.none )
+            ( { model | windowSize = { height = height, width = width }, isMenuPanelOpen = False }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -538,16 +544,157 @@ pageTextMarkup =
         |> H1 
             Why EV?
 
-        The benefits of an EV are...
+        Electric vehicles (EVs) are cars that move using a large electric battery
+        powering an electric motor. They do not use any petrol or diesel fuel. 
 
+        Also called Battery Electric Vehicles (BEVs), they produce no exhaust, which is
+        far kinder to the environment – petrol and diesel transport produce 18% of New
+        Zealand’s greenhouse gases. 80% of New Zealand electricity is generated by rain
+        (hydro dams), geothermal, and wind, so the source of the car’s fuel is
+        environmentally friendly, and inexpensive, and produced locally. We import over
+        a billion dollars of petrol and three billion dollars of crude oil from overseas
+        each year and local electricity generation is cheaper. 
+
+        A 2015 government study shows electric cars also have environmental benefits
+        versus petrol cars when the full lifecycle of manufacture, use, and disposal are
+        assessed, and that the ingredients like lithium in batteries, aren’t scarce. 
+
+        Each year, an estimated 256 New Zealanders prematurely die from harmful diesel
+        and other vehicle emissions (similar to the number who die in crashes) and this
+        would reduce by driving electric vehicles. 
+
+        Electric cars have no clutch or gears, and accelerate more quickly and smoothly,
+        in a "sporty" way, and climb hills easier than petrol cars. A fully electric
+        motor has fewer moving parts, no spark plugs or engine oil, and requires less
+        maintenance than a petrol equivalent. 
+
+        Such cars are extremely quiet and reduce noise pollution. Travelling down hills
+        or braking recharges the batteries, and is known as regenerative braking. The
+        motor uses no energy when the car is still. 
+
+        Electric cars are safe, reliable, manufactured by large brands, and are
+        beginning to be sold in high volume globally. Norway, with a similar population
+        and size to New Zealand, is a global leader, with electric cars now outselling
+        fuel-driven vehicles. Norway thus expects to end fuel car sales in 2025. 
+
+        The dashboard displays how far you can drive with remaining battery charge.
+        Entry-level electric cars have a shorter range (100km+) than petrol cars.
+        High-end cars with large batteries (500km+ range) cost more. Battery prices are
+        dropping significantly (80% drop from 2010 to 2016), making electric cars
+        steadily cheaper. 
+
+        On average New Zealand drivers travel 28km per day, and 95% of days within
+        125km. Electric cars can be charged at home overnight and be "full" in the
+        morning, so affordable electric cars are practical for most daily journeys. The
+        census shows over half of New Zealand households have two or more cars,
+        suggesting many could own a cheap electric car and keep a long distance fuel
+        car. 
+
+        Since 2016, electric car prices and models in NZ have improved. Electric cars
+        here are mostly cheap, used, imported short-range 
+        [Nissan Leaf]{ link | url = /vehicles/nissan/leaf/2011 } hatchbacks. 
+        Increasing numbers of other makes and
+        models are arriving, including large, long-range, high performance cars by
+        Tesla, the global pioneer in electric cars. Most automakers are indicating
+        timeframes by which all cars they manufacture will be partially or fully
+        electric, eg Volvo in 2019, Jaguar 2020, Mercedes 2022, Toyota`/`Lexus 2025,
+        and Porsche & VW 2030.
+
+        |> H2 
+            What about hybrids?
+
+        There is a type of vehicles called /plug-in hybrid electric vehicles/ (PHEV).
+        These have both an electric and petrol motor, but with the added feature that
+        they can be plugged in at home or wherever there is an electrical socket. This
+        lets you drive short distances electrically, at low cost and without pollution,
+        and long distances using fossil fuel, avoiding the need to frequently recharge.
+
+        These vehicles also have regenerative braking, which captures some energy that
+        would be wasted as braking heat. 
+
+        They cost somewhere in the middle between affordable (short range) and expensive
+        (long range) fully electric cars. 
+
+        The drawback of plug-in hybrids is a complicated engine requiring maintenance,
+        petrol refueling costs, air pollution, and engine noise. 
+
+        The fossil fuel engine will either help the electric motor turn the wheels
+        (“parallel PHEV”) or only recharge the battery (“series PHEV”) but some can do
+        both. Most have very small batteries that don’t drive far electrically. As
+        battery prices drop, plug-in hybrids will be replaced by full battery electrics.
+
+        |> H4 
+            What we used to call hybrids no longer count
+
+        Cars such as the /non-plug-in/ Toyota Prius Hybrid found in this country over
+        the past decade are different–they can not be plugged into an electric socket to
+        recharge. They can only fill up on petrol, and use the petrol engine and
+        regenerative braking to recharge a small battery that gives a short (1-2 km)
+        electric range. A plug-in vehicle has many more benefits.
+
+        |> Image 
+            url = /img/vehicle-types.png
+            description = Vehicle types
+            width = 800
+            border = False 
+            align = Center
+
+
+        |> H2
+            What about hydrogen?
+
+        There has been an ongoing debate about whether the long-term future of car energy
+        would be hydrogen fuel cells or stored electricity (i.e. batteries). While
+        hydrogen vehicles can recharge quickly and drive long distances, the challenge
+        is that hydrogen is made by splitting it out of natural gas (which releases
+        greenhouse gases) or water (which requires vast amounts of electricity) and the
+        hydrogen then needs to be pressurised, stored, and transported, even though the
+        vehicle still has an electric motor. 
+
+        Battery electric cars by contrast are safer (no explosive gas), simpler, use
+        less energy, and it is a quarter of the cost to generate electricity, send it
+        through the electrical grid, and recharge batteries. Hydrogen cars are not sold
+        in New Zealand, and are very limited globally. A demonstration refueling project is to
+        be trialed at Port of Auckland, and Hyundai have displayed a Nexo hydrogen SUV
+        at a Fielddays expo in New Zealand.
 
 |> Page
     id = running-costs
     text =
         |> H1
             Running costs 
-        
-        The running costs are...
+
+        In one sentence: EVs are expensive upfront but cheaper overall.
+
+        Electric cars are currently more expensive to buy new than fuel vehicles,
+        largely due to high battery prices and low production volume. This is expected
+        to change within 10 years, as battery prices drop, at which point it will be
+        cheaper for car manufacturers to build electric cars than fuel cars.
+
+        Travelling by electricity is cheaper than petrol: EECA calculates it is
+        equivalent to 30 cents a litre, about 7 times cheaper than petrol. 
+
+        Driven regularly, an electric car can save you a few thousand dollars a year,
+        quickly paying off the higher car purchase price. Fewer moving parts means
+        electric cars have less maintenance cost 
+        ([see total cost of ownership calculator]{ link | url = https://eecabusiness.govt.nz/tools/vehicle-total-cost-of-ownership-tool/ }).
+
+        The cost of electricity varies more than petrol. Recharging with electricity can
+        be free (if your employer or a friendly business or council is paying instead of
+        you!), low cost (overnight off-peak electricity rates are cheaper than daytime,
+        if you select a good plan or provider), or higher cost (if you recharge during
+        the day, or are paying to use a fast-charging station). 
+
+        Assuming you commute 40km a day, you would probably need about 8 units of
+        electricity (kWh) to recharge. At a low overnight rate of 11c per kWh this is
+        $0.88 a day. 
+
+        Overnight charging is good for the national electricity grid
+        because it is at its lowest demand, meaning the power is likely generated with
+        renewables, not coal and gas. If your car has a smart timer, set the "End charge
+        time" to just before 7am, so your battery (and optionally cabin) isn’t cold to
+        drive away in, your battery isn’t full for long, and so it randomises the charge
+        start time (makes managing electricity demand easier for the power companies).
 
 |> Page 
     id = charging 
@@ -590,7 +737,8 @@ pageTextMarkup =
             description = Domestic 3-pin (S3112) socket 
             width = 200
             border = False
-            align = Left 
+            align = Left
+
 
         |> List 
             - 8-10 amps, single phase AC 230V
@@ -739,7 +887,7 @@ pageTextMarkup =
         configuration for cars in New Zealand.
 
         |> H3
-            Slow (AC)
+            Slow charging connectors (AC)
 
         |> H4 
             Type 1 (“J1772”) (Japan & US)
@@ -781,10 +929,10 @@ pageTextMarkup =
             - VW eGolf
 
         |> H3 
-            Fast (DC)
+            Fast charging connectors (DC)
 
         |> H4 
-            CHAdeMO (Japan / US)
+            CHAdeMO (Japan and US)
 
         |> Image 
             url = /img/chademo-type4-plug.svg
@@ -798,7 +946,7 @@ pageTextMarkup =
             - Kia Soul
             - Nissan Leaf and eNV200
             - Mitsubishi iMiev and some Outlander 
-            - Tesla Model S/X (with adapter from Tesla)
+            - Tesla Model S and Model X (with adapter from Tesla)
 
         |> H4 
             Tesla Supercharger (Japan/US)    
@@ -806,13 +954,13 @@ pageTextMarkup =
         |> Image 
             url = /img/tesla-hpwc-plug.svg
             description = Tesla Supercharger
-            width = 300
+            width = 200
             border = False
             align = Left 
 
         |> List 
             - This socket isn’t found on Tesla cars in NZ 
-            - In NZ, Tesla Model S/X use CHAdeMO (with special cable supplied by Tesla) and modified Type 2 (not CCS) for both AC and DC
+            - In NZ, Tesla Model S and Model X use CHAdeMO (with special cable supplied by Tesla) and modified Type 2 (not CCS) for both AC and DC
             - Model 3 uses Type2 CCS
             - NOT supported by NZ charging stations
 
@@ -820,12 +968,12 @@ pageTextMarkup =
             Combo (slow AC and fast DC)
 
         |> H4 
-            Type 1 CCS (Japan / US)
+            Type 1 CCS (Japan and US)
 
         |> Image 
             url = /img/type1-ccs-plug.svg
             description = Type 1 CCS
-            width = 300
+            width = 200
             border = False
             align = Left 
 
@@ -839,11 +987,11 @@ pageTextMarkup =
         |> Image 
             url = /img/combo-ccs-eu-plug.svg
             description = Type 2 CCS 
-            width = 300
+            width = 200
             border = False
             align = Left 
 
-        |> List 
+        |> List
             - Audi & BMW (mid 2017 onwards) 
             - Jaguar I-PACE
             - Kia Soul (from 2019), Kia Niro BEV 
@@ -896,7 +1044,30 @@ pageTextMarkup =
         NZTA collates and publicly shares official charging locations through a programme named 
         EVRoam, visible on NZTA and the AA website.
 
+        |> H2
+            How far can you drive before recharging?
 
+        Automakers and dealers advertise the distance cars can drive, however these can
+        be exaggerated. A good information source is the [EPA Range]{ link | url = https://fueleconomy.gov}. 
+        The US government test-drives cars in a consistent manner
+        to determine how far the battery lasts on a typical journey mixing highway and
+        suburban driving. A similar European “NEDC” and Worldwide “WLTP” electric car
+        range test is less useful because they state long distances that can never be
+        achieved with normal driving. 
+
+        Several situations will result in a car using up
+        its battery before reaching the EPA range: e.g. frequent acceleration, big hill
+        climbs, high speeds, constant aircon or heating, headwinds, towing a trailer,
+        and an old battery. Conversely, travelling slowly or staying on flat terrain can
+        often let you drive further than the EPA figure. 
+
+        When planning road trips, talk
+        to other owners of your car model about how mountains, headwinds, and other
+        factors drain your battery along your specific route, and how much battery you
+        need to confidently reach destinations. The  
+        [PowerTrip app]{ link | url = https://thepowertrip.co.nz } can give you a rough idea. 
+        If you run out of charge, the car will slow down to crawl and eventually stop. 
+        The AA can flat-bed tow you to a public charger so you can get back on your journey.
 
 |> Page
     id = batteries
@@ -966,6 +1137,193 @@ pageTextMarkup =
             batteries, fix weak cells, or replace Nissan Leaf car batteries
             (reconditioned $750-$5000), including swapping for larger battery sizes
             (>$15k).
+
+|> Page 
+    id = buying
+    text = 
+        |> H1
+            Buying 
+
+        Used and new car dealers throughout NZ sell and service electric cars. You will
+        find hundreds of listings by choosing "Electric Cars" on
+        [Trade Me Motors]{ link | url = https://trademe.nz/motors }
+        or on [evsales.nz]{ link | url = https://evsales.nz }. 
+
+        Used cars from Japan usually have console displays stuck in Japanese; this isn’t
+        an issue with UK imports or cars sold new in NZ. The driver’s dashboard can be
+        configured to display English by dealers. To change the central entertainment
+        headunit to English dealers can sell a new (English) Nissan or third party
+        system. This is sometimes included in the purchase price. 
+
+        |> H2
+            Go for a test drive! 
+
+        The experience of test-driving an electric car gives people
+        confidence to buy. You can test drive an electric car by asking a dealer, asking
+        existing owners if they’re prepared to let you drive theirs, or rent from:
+
+        |> List 
+            - [Bluecars]{ link | url = https://bluecars.nz }
+            - [Europcar]{ link | url = https://europcar.co.nz/electric-vehicles }
+            - [Mevo]{ link | url = https://mevo.co.nz }
+            - [Snap Rentals]{ link | url = https://snaprentals.co.nz }
+            - [Yoogo Share]{ link | url = https://yoogoshare.co.nz }
+
+|> Page 
+    id = nz-policies
+    text = 
+        |> H1
+            NZ policies and growth
+
+        For New Zealand to reach the goal of being net zero carbon by 2050, 100% of cars
+        entering NZ from 2030 would need to be electric (otherwise large numbers of fuel
+        cars will need to be scrapped in the year 2050, because 20% of our cars are over
+        20 years old). 
+
+        This will require electric vehicle sales to jump astronomically; in 2019 less
+        than 3% of cars entering NZ are electric. 
+
+        |> Image
+            url = /img/nz-ev-fleet-size.png 
+            description = NZ EV fleet size 
+            width = 400
+            align = Left
+            border = False
+
+        Electric vehicle numbers are rising steadily, but so far only account for 15,500
+        out of our 3.8 million light vehicles. 3.8 million electric vehicles would
+        demand 17% more electricity, which can be met with renewable power stations that
+        have consent to be built.
+
+        In 2016 the government released an electric vehicle ‘package’ with a stated
+        target (a doubling of electric vehicles every year to 64,000 by 2021, almost 2%
+        of all vehicles, or 12% of car sales being electric), a $1M`/`year (for 5 years)
+        nationwide education campaign, offering cash to co-fund projects that aid
+        electric car adoption ($3M fund pool, open every 6 months), briefly trialled
+        electric cars driving in special vehicle lanes, and efforts to support bulk car
+        purchases and charging stations. 
+
+        The annual "rego" fee for electric cars is `~`$75 per year 
+        (see [electricvehicles.govt.nz]{link|url=https://electricvehicles.govt.nz}). 
+
+        The current approach to reducing the cost of electric vehicles is set to change
+        in 2021, assuming no change in government. Since 2009, electric vehicle owners
+        have not paid road user charges (RUCs), saving an owner $720 per 10,000km
+        compared to a small diesel car. From 2021 this is proposed to be replaced by a
+        [Clean Car Rule and a Clean Car Discount]{ link | url = https://transport.govt.nz/clean-cars/}. 
+
+        The Rule requires car importers to progressively sell cars with lower CO2
+        emissions, at levels that trail Japanese rules by 10 years. The Discount will
+        award buyers $8000 off new electric and $2600 off used electric imports. Hybrids
+        and very efficient fuel cars will get small discounts. High emitting vehicles
+        will face up to a $3000 purchase penalty. 
+
+        These policies follow logic outlined in a 2015 report by Barry Barton at
+        University of Waikato and a detailed follow up by the Productivity Commission in
+        2018. These reports explained NZ was one of the last countries to introduce such
+        policies, and how they are successful overseas.
+
+        Heavy electric vehicles over 3 tons (eg buses and trucks) will instead continue
+        to retain the RUC exemption through to 2025. Rising petrol prices and fuel taxes
+        (up to 9-12c`/`litre within 3 years across New Zealand, plus 10c`/`litre in
+        Auckland since 2018) will increase the savings available to electric car
+        drivers. 
+
+        Japan and UK are a cheap source for used electric imports as their governments
+        also subsidise their purchase, and we don’t charge high import fees. Electric
+        vehicle adoption is supported by an
+        [industry]{link|url=https://DriveElectric.org.nz} and [owner association]{link|url=https://BetterNZ.org}. 
+        Some large NZ firms have said they
+        will make a third of their cars electric by 201929. Councils have few electric
+        cars however EECA has released a local government guide for councils. Auckland’s
+        mayor has pledged the streets for a part of the city will be "fossil fuel free"
+        by 2030.
+
+        |> H2
+            Global leaders & government policy
+
+        Many governments are forcing automakers to sell electric cars to hit climate
+        change and air quality goals, and in response to diesel emissions cheating. All
+        new cars sold are expected to be electric from 2025 in Norway, 2030 in
+        Germany, Sweden, Netherlands and India, 2032 in Scotland, and 2040 in France and
+        Britain. 
+
+        Others have interim goals: 12% of sales in China by 2020; 22% of
+        sales in California and New York by 2025; 20-30% of sales in Japan by 2030. Over
+        200 European cities have low emission zones where fuel vehicles are barred entry
+        or pay fees (e.g. Paris, London). The US has forced VW to spend $2B on charging
+        stations across USA. China is working towards 5 million charging locations by
+        2020.
+
+        Norway has the most incentives globally, and has a similar population, land
+        size, and vehicle count as NZ, but higher proportion of clean electricity.
+        Norway charges a "pollution" tax on fuel vehicles (up to $40,000, based on
+        emissions and weight) and a discount on electric vehicles (-$10,000). Electric vehicles don’t
+        incur the 25% sales tax, enjoy halved fringe benefit tax, and free use of bus
+        lanes, toll roads, urban street parking, and charging stations. Monthly electric
+        car sales now outnumber fuel car sales; the country has over 300,000 electric
+        vehicles (the highest per capita globally), and 10,000 charging points.
+
+        EV fleet growth in Norway: 
+
+        |> Image
+            url = /img/norway-ev-fleet-size.png 
+            description = Norway EV fleet size 
+            width = 400
+            align = Center 
+            border = False
+
+|> Page 
+    id = resources 
+    text = 
+        |> H1 
+            Resources 
+                
+        |> List 
+
+            - [EVTalk]{ link | url = https://evtalk.co.nz },\u{200B} a NZ electric vehicle news website, email newsletter, and monthly print magazine. \u{200B} 
+            - [NZ EV Podcast\u{200B}]{ link | url = https://podcasts.nz/nz-ev-podcast/ }, produced weekly.
+            - [EVolocity]{ link | url = https://\u{200B}evolocity.co.nz }\u{200B}, nationwide annual high school competition to build and race electric vehicles.  
+            - [EVWorld]{ link | url = \u{200B}https://www.evworld.nz }, public`/`industry conferences. 
+            - [International Drive Electric Week]{ link | url = https://driveelectricweek.org }\u{200B}: multiple test drive events\u{200B} (September).
+            - [Flip The Fleet]{ link | url = https://\u{200B}flipthefleet.org }: enter driving statistics and be a part of a national EV research project. 
+            - [Leading the Charge]{ link | url = https://leadingthecharge.org.nz\u{200B} }\u{200B}, an annual 2500km electric car roadtrip the length of New Zealand, stopping in multiple towns for public display and rides\u{200B} (next: 2020).
+
+
+        |> H2
+            Facebook EV owner groups
+
+        |> List 
+            - [NZ EV Owners]{ link | url = https://facebook.com/groups/NZEVOwners/ \u{200B}} \u{200B}(lots of discussion)
+            - Northland: [one group]{ link | url = https://facebook.com/groups/1472323112818001/ } and [another group]{ link | url = https://\u{200B}facebook.com/revupnz/ }
+            - [Auckland]{ link | url = https://facebook.com/groups/291373964545996/ }
+            - [Waikato]{ link | url = https://facebook.com/groups/WaikatoEV/ }
+            - [Nelson]{ link | url = https://facebook.com/groups/365895557107117/ }
+            - [Wellington]{ link | url = https://facebook.com/groups/WellyEV/ }
+            - [Christchurch]{ link | url = https://facebook.com/groups/ChristchurchEVGroup/ }
+            - [Dunedin]{ link | url = https://facebook.com/groups/403816650002889/ }
+
+
+        |> H2 
+            What about other types of vehicles?
+
+        |> List 
+            - Bicycles\u{200B}: commonly sold in local bicycle shops, with 40-100km "pedal assisted" range.
+            - Motorbikes\u{200B}: [Ubco]{ link | url = \u{200B}https://ubcobikes.com\u{200B} } (Kiwi made); [Zero Motorcycles]{ link | url = https://\u{200B}zeromotorcycles.com\u{200B} }, \u{200B}Harley Davidson Livewire (2019).
+            - Formula \u{200B}racing\u{200B} cars compete in [Formula E]{ link | url = https://\u{200B}fiaFormulaE.com }
+            - An [electric supercar]{ link | url = https://www.nio.io/ep9\u{200B} } is the fastest around the gruelling \u{200B}Nurburgring circuit\u{200B}.
+            - Over 400 one-seat "Paxster" ully electric delivery buggies are used by NZ Post.
+            - 4WD Utes: \u{200B}Coming soon from \u{200B}[Great Wall]{ link | url = https://greatwall.co.nz\u{200B} }, [Rivian]{ link | url = https://\u{200B}rivian.com\u{200B} }, [Bollinger Motors]{ link | url = https://\u{200B}bollingermotors.com\u{200B} }, and [Tesla]{ link | url = https://tesla.com }.
+            - Trucks\u{200B} are made by [Zero Emission Vehicles]{ link | url = https://\u{200B}zevnz.com }\u{200B} and Waste Management locally. 
+            - Electric truck importers include [Etrucks]{ link | url = http://etrucks.co.nz }
+                and \u{200B}[SEA Electric]{ link | url = https://sea-electric.com}\u{200B}. Tesla is releasing a [truck]{ link | url = https://tesla.com/semi \u{200B}} in 2019 that can carry 36 tons a
+                distance of 800km and still recharge to 80% in 30 minutes.
+            - Fully electric \u{200B}buses\u{200B} are mass produced, particularly in China, which has 350,000 on their roads.
+                Wellington and Auckland have electric buses, and plan to go all electric in the years to come.
+            - Fully electric \u{200B}motorhomes\u{200B} are now available for hire (eg \u{200B}[BritzEV]{ link | url = https://www.britzev.com\u{200B}}).
+            - The world’s first electric \u{200B}ferry\u{200B} launched in 2015 in Norway (carries 300 people, 120 cars).
+            - Electric \u{200B}airplanes\u{200B} are in commercial development. The \u{200B}/Solar Impulse 2/\u{200B} flew the globe in 2016;
+                Norway aims to have all domestic air travel go electric before 2040.
 
 |> Page 
     id = licences 
