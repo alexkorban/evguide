@@ -1,21 +1,4 @@
-module Color exposing
-    ( black
-    , blue
-    , darkBlue
-    , darkCharcoal
-    , darkGreen
-    , green
-    , grey
-    , lightBlue
-    , lightCharcoal
-    , lightGrey
-    , offBlack
-    , offWhite
-    , orange
-    , paleBlue
-    , paleGreen
-    , white
-    )
+module Color exposing (..)
 
 import Element exposing (rgb255)
 
@@ -82,6 +65,14 @@ paleBlue =
 
 paleGreen =
     rgb255 167 193 176
+
+
+veryPaleBlue =
+    rgb255 242 252 255
+
+
+
+--231 248 253
 
 
 white =

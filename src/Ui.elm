@@ -57,9 +57,12 @@ heading4 attrs =
     paragraph ([ Font.size <| round <| fontScale 1, Region.heading 4 ] ++ headingAttrs ++ attrs)
 
 
-logo : List (Attribute msg) -> Element msg -> Element msg
-logo attrs =
-    el ([ Font.size 24, Font.color lightCharcoal, logoTypeface ] ++ attrs)
+logo : Color -> List (Attribute msg) -> Element msg
+logo color attrs =
+    row ([ Font.size 24, logoTypeface ] ++ attrs)
+        [ el [ Font.color lightBlue ] <| text "EV"
+        , el [ Font.color color ] <| text "Guide"
+        ]
 
 
 menuIcon : List (Attribute msg) -> Element msg

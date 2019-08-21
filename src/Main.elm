@@ -1,6 +1,7 @@
 module Main exposing (update, vehicleCard, view)
 
 import Browser exposing (UrlRequest(..))
+import Browser.Dom
 import Browser.Events exposing (onResize)
 import Browser.Navigation as Nav
 import Color exposing (..)
@@ -16,6 +17,7 @@ import Element.Region as Region
 import ElmMarkup
 import Html exposing (Html)
 import List.Extra as List
+import Task
 import Types exposing (..)
 import Ui
 import Url exposing (Url)
@@ -38,10 +40,25 @@ type GuideRoute
 -}
 type Msg
     = RuntimeChangedUrl Url
+    | RuntimeDidSomethingIrrelevant
     | UserClickedLink UrlRequest
     | UserClickedMenuIcon
     | UserClickedOutsideMenuPanel
+    | UserChoseVehicleAvailabilityOption VehicleAvailability
+    | UserChoseVehicleSortOrder VehicleSortOrder
     | UserResizedWindow Int Int
+
+
+type VehicleAvailability
+    = AvailableAny
+    | AvailableNew
+    | AvailableUsed
+
+
+type VehicleSortOrder
+    = NameSort
+    | PriceSort
+    | RangeSort
 
 
 type alias Model =
@@ -50,6 +67,8 @@ type alias Model =
     , navKey : Nav.Key
     , pageText : PageDict Msg
     , route : GuideRoute
+    , vehicleAvailability : VehicleAvailability
+    , vehicleSortOrder : VehicleSortOrder
     , vehicleText : PageDict Msg
     , windowSize : Size
     }
@@ -100,6 +119,8 @@ init flags url navKey =
       , navKey = navKey
       , pageText = Result.withDefault Dict.empty pageTextRes
       , route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url
+      , vehicleAvailability = AvailableAny
+      , vehicleSortOrder = NameSort
       , vehicleText = Result.withDefault Dict.empty vehicleTextRes
       , windowSize = { height = flags.windowHeight, width = flags.windowWidth }
       }
@@ -275,11 +296,7 @@ navigation model =
         [ row [ width fill, height <| px 60, padding 10, Region.navigation, spacing 20 ] <|
             link []
                 { url = "/"
-                , label =
-                    paragraph []
-                        [ Ui.logo [ Font.color lightBlue ] <| text "EV"
-                        , Ui.logo [ Font.color blue ] <| text "Guide"
-                        ]
+                , label = Ui.logo blue []
                 }
                 :: pageLinks
         , el [ width fill, height <| px 1, Background.color lightBlue ] none
@@ -289,6 +306,12 @@ navigation model =
 
 navigationMenuPanel : Element Msg
 navigationMenuPanel =
+    let
+        linkEls =
+            navigationMenuLinks
+                |> List.map (\navLink -> link [ alignRight, Font.size 18, Font.color green ] navLink)
+                |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
+    in
     row [ width fill, height fill ]
         [ el
             [ width fill
@@ -308,7 +331,7 @@ navigationMenuPanel =
             , Border.shadow { offset = ( 0, 0 ), blur = 10, color = blue, size = 0.5 }
             ]
           <|
-            List.map (\navLink -> link [ alignRight, Font.size 18, Font.color green ] navLink) navigationMenuLinks
+            (linkEls ++ [ Ui.logo paleBlue [ paddingXY 0 20, alignRight, Font.size 18 ] ])
         ]
 
 
@@ -358,10 +381,7 @@ footer model =
             , Border.color lightBlue
             , Background.color blue
             ]
-            [ paragraph [ alignTop ]
-                [ Ui.logo [ Font.color lightBlue ] <| text "EV"
-                , Ui.logo [ Font.color offWhite ] <| text "Guide"
-                ]
+            [ Ui.logo offWhite [ alignTop, width <| px 200 ]
             , column
                 [ width <| minimum 200 <| fillPortion 1
                 , alignTop
@@ -422,31 +442,106 @@ footer model =
         ]
 
 
-view : Model -> Html Msg
-view model =
+indexPageContent : Model -> List (Element Msg)
+indexPageContent model =
     let
-        indexPageContent =
-            [ column
+        sortOptionButton label state =
+            case state of
+                Input.Idle ->
+                    el [ Font.color blue ] <| text label
+
+                Input.Focused ->
+                    el [ Font.color lightBlue ] <| text label
+
+                Input.Selected ->
+                    el [ Font.color lightBlue, Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }, Border.color lightBlue ] <| text label
+
+        sortOptions =
+            el
+                [ centerX
+                , Background.color veryPaleBlue
+                , paddingXY 20 7
+                , Border.shadow { offset = ( -2, 2 ), blur = 2, color = paleBlue, size = 0.1 }
+                ]
+            <|
+                Input.radioRow
+                    [ padding 0
+                    , spacing 10
+                    ]
+                    { onChange = UserChoseVehicleSortOrder
+                    , selected = Just model.vehicleSortOrder
+                    , label = Input.labelLeft [ centerY, paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ] <| text "Sort by:"
+                    , options =
+                        [ Input.optionWith NameSort <| sortOptionButton "Name"
+                        , Input.optionWith PriceSort <| sortOptionButton "Price"
+                        , Input.optionWith RangeSort <| sortOptionButton "Range"
+                        ]
+                    }
+
+        availabilityOptions =
+            el
+                [ centerX
+                , Background.color veryPaleBlue
+                , paddingXY 20 7
+                , Border.shadow { offset = ( -2, 2 ), blur = 2, color = paleBlue, size = 0.1 }
+                ]
+            <|
+                Input.radioRow
+                    [ padding 0
+                    , spacing 10
+                    ]
+                    { onChange = UserChoseVehicleAvailabilityOption
+                    , selected = Just model.vehicleAvailability
+                    , label = Input.labelLeft [ centerY, paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ] <| text "Availability:"
+                    , options =
+                        [ Input.optionWith AvailableAny <| sortOptionButton "New or used"
+                        , Input.optionWith AvailableUsed <| sortOptionButton "Used"
+                        , Input.optionWith AvailableNew <| sortOptionButton "New"
+                        ]
+                    }
+
+        controls =
+            (if model.windowSize.width < 2 * vehicleCardWidth + 2 * mainContentMargin then
+                column
+
+             else
+                row
+            )
+                [ width fill
+                , paddingXY 20 10
+                , spacing 20
+                ]
+                [ sortOptions, availabilityOptions ]
+
+        vehicleCards =
+            column
                 [ Region.mainContent
                 , width <| minimum (vehicleCardWidth + mainContentMargin * 2) shrink
                 , centerX
                 , spacingXY 0 10
-                , paddingEach { left = 20, right = 20, top = 0, bottom = 0 }
+                , paddingEach { left = 20, right = 20, top = 20, bottom = 0 }
                 , Font.color offBlack
                 ]
-              <|
+            <|
                 (Vehicle.data
                     |> Cons.toList
                     |> List.map vehicleCard
                     |> List.greedyGroupsOf (max ((model.windowSize.width - mainContentMargin * 2) // vehicleCardWidth) 1)
                     |> List.map (row [ spacing 8 ])
                 )
-            ]
+    in
+    [ controls
+    , vehicleCards
+    ]
 
+
+view : Model -> Html Msg
+view model =
+    let
         content =
             case model.route of
                 IndexPageRoute ->
-                    indexPageContent
+                    indexPageContent model
 
                 InfoPageRoute pageId ->
                     case Dict.get pageId model.pageText of
@@ -454,7 +549,7 @@ view model =
                             [ el [ width <| maximum 800 fill, centerX, paddingXY 0 20 ] <| pageText model.windowSize ]
 
                         Nothing ->
-                            indexPageContent
+                            indexPageContent model
 
                 VehiclePageRoute vehicleId ->
                     case Vehicle.find vehicleId of
@@ -494,11 +589,25 @@ view model =
             )
 
 
+resetViewport : Cmd Msg
+resetViewport =
+    Task.perform (\_ -> RuntimeDidSomethingIrrelevant) (Browser.Dom.setViewport 0 0)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         RuntimeChangedUrl url ->
-            ( { model | route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url }, Cmd.none )
+            ( { model | route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url }, resetViewport )
+
+        RuntimeDidSomethingIrrelevant ->
+            ( model, Cmd.none )
+
+        UserChoseVehicleAvailabilityOption option ->
+            ( { model | vehicleAvailability = option }, Cmd.none )
+
+        UserChoseVehicleSortOrder order ->
+            ( { model | vehicleSortOrder = order }, Cmd.none )
 
         UserClickedLink urlRequest ->
             case urlRequest of
