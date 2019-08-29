@@ -45,3 +45,29 @@ rangeFrom range =
 
         RangeFrom a ->
             a
+
+
+rangeTo : SingleOrPair a -> a
+rangeTo range =
+    case range of
+        Single a ->
+            a
+
+        Range _ a ->
+            a
+
+        RangeFrom a ->
+            a
+
+
+rangeMidpoint : SingleOrPair Int -> Int
+rangeMidpoint range =
+    case range of
+        Single a ->
+            a
+
+        Range a b ->
+            round (toFloat (a + b) / 2)
+
+        RangeFrom a ->
+            a

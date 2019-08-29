@@ -1,5 +1,6 @@
 module Main exposing (update, vehicleCard, view)
 
+import AssocList
 import Browser exposing (UrlRequest(..))
 import Browser.Dom
 import Browser.Events exposing (onResize)
@@ -16,6 +17,7 @@ import Element.Input as Input
 import Element.Region as Region
 import ElmMarkup
 import Html exposing (Html)
+import Http
 import List.Extra as List
 import Task
 import Types exposing (..)
@@ -23,6 +25,7 @@ import Ui
 import Url exposing (Url)
 import Url.Parser as UrlParser exposing ((</>))
 import Util exposing (..)
+import Validate exposing (..)
 import Vehicle exposing (..)
 
 
@@ -31,7 +34,8 @@ import Vehicle exposing (..)
 -- /why-ev or /ev-running-costs or /about ==> information pages
 -}
 type GuideRoute
-    = IndexPageRoute
+    = ContactPageRoute
+    | IndexPageRoute
     | InfoPageRoute String
     | VehiclePageRoute String
 
@@ -41,34 +45,31 @@ type GuideRoute
 type Msg
     = RuntimeChangedUrl Url
     | RuntimeDidSomethingIrrelevant
+    | RuntimeSentContactForm (Result Http.Error ())
     | UserClickedLink UrlRequest
     | UserClickedMenuIcon
     | UserClickedOutsideMenuPanel
-    | UserChoseVehicleAvailabilityOption VehicleAvailability
-    | UserChoseVehicleSortOrder VehicleSortOrder
+    | UserChoseVehicleAvailabilityOption Vehicle.Availability
+    | UserChoseVehicleSortOrder Vehicle.SortOrder
     | UserResizedWindow Int Int
-
-
-type VehicleAvailability
-    = AvailableAny
-    | AvailableNew
-    | AvailableUsed
-
-
-type VehicleSortOrder
-    = NameSort
-    | PriceSort
-    | RangeSort
+    | UserTypedContactName String
+    | UserTypedContactEmail String
+    | UserTypedContactMessage String
+    | UserSubmittedContactForm
 
 
 type alias Model =
-    { isMenuPanelOpen : Bool
+    { contactFormMessages : AssocList.Dict ContactFormMessage String
+    , contactEmail : String
+    , contactName : String
+    , contactMessage : String
+    , isMenuPanelOpen : Bool
     , markupErrors : List String
     , navKey : Nav.Key
     , pageText : PageDict Msg
     , route : GuideRoute
-    , vehicleAvailability : VehicleAvailability
-    , vehicleSortOrder : VehicleSortOrder
+    , vehicleAvailability : Vehicle.Availability
+    , vehicleSortOrder : Vehicle.SortOrder
     , vehicleText : PageDict Msg
     , windowSize : Size
     }
@@ -76,6 +77,13 @@ type alias Model =
 
 type alias Flags =
     { windowHeight : Int, windowWidth : Int }
+
+
+type ContactFormMessage
+    = EmailFieldError
+    | MessageFieldError
+    | SendError
+    | Success
 
 
 routeParser : UrlParser.Parser (GuideRoute -> a) a
@@ -87,6 +95,7 @@ routeParser =
                 </> UrlParser.string
                 </> UrlParser.int
         , UrlParser.map IndexPageRoute <| UrlParser.oneOf [ UrlParser.s "vehicles", UrlParser.top ]
+        , UrlParser.map ContactPageRoute <| UrlParser.s "contact"
         , UrlParser.map InfoPageRoute <| UrlParser.string
         ]
 
@@ -114,7 +123,11 @@ init flags url navKey =
                 ( Err messages1, Err messages2 ) ->
                     messages1 ++ messages2
     in
-    ( { isMenuPanelOpen = False
+    ( { contactFormMessages = AssocList.empty
+      , contactEmail = ""
+      , contactName = ""
+      , contactMessage = ""
+      , isMenuPanelOpen = False
       , markupErrors = markupErrors
       , navKey = navKey
       , pageText = Result.withDefault Dict.empty pageTextRes
@@ -445,7 +458,7 @@ footer model =
 indexPageContent : Model -> List (Element Msg)
 indexPageContent model =
     let
-        sortOptionButton label state =
+        radioButton label state =
             case state of
                 Input.Idle ->
                     el [ Font.color blue ] <| text label
@@ -472,9 +485,9 @@ indexPageContent model =
                     , selected = Just model.vehicleSortOrder
                     , label = Input.labelLeft [ centerY, paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ] <| text "Sort by:"
                     , options =
-                        [ Input.optionWith NameSort <| sortOptionButton "Name"
-                        , Input.optionWith PriceSort <| sortOptionButton "Price"
-                        , Input.optionWith RangeSort <| sortOptionButton "Range"
+                        [ Input.optionWith NameSort <| radioButton "Name"
+                        , Input.optionWith PriceSort <| radioButton "Price"
+                        , Input.optionWith RangeSort <| radioButton "Range"
                         ]
                     }
 
@@ -494,9 +507,8 @@ indexPageContent model =
                     , selected = Just model.vehicleAvailability
                     , label = Input.labelLeft [ centerY, paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ] <| text "Availability:"
                     , options =
-                        [ Input.optionWith AvailableAny <| sortOptionButton "New or used"
-                        , Input.optionWith AvailableUsed <| sortOptionButton "Used"
-                        , Input.optionWith AvailableNew <| sortOptionButton "New"
+                        [ Input.optionWith AvailableAny <| radioButton "New or used"
+                        , Input.optionWith AvailableNew <| radioButton "New"
                         ]
                     }
 
@@ -511,7 +523,7 @@ indexPageContent model =
                 , paddingXY 20 10
                 , spacing 20
                 ]
-                [ sortOptions, availabilityOptions ]
+                [ sortOptions ]
 
         vehicleCards =
             column
@@ -524,7 +536,8 @@ indexPageContent model =
                 ]
             <|
                 (Vehicle.data
-                    |> Cons.toList
+                    |> Vehicle.filter model.vehicleAvailability
+                    |> Vehicle.sort model.vehicleSortOrder
                     |> List.map vehicleCard
                     |> List.greedyGroupsOf (max ((model.windowSize.width - mainContentMargin * 2) // vehicleCardWidth) 1)
                     |> List.map (row [ spacing 8 ])
@@ -535,11 +548,84 @@ indexPageContent model =
     ]
 
 
+contactValidator : Validator ( ContactFormMessage, String ) Model
+contactValidator =
+    Validate.all
+        [ Validate.ifInvalidEmail .contactEmail
+            (\_ -> ( EmailFieldError, "We need an email to reply to you." ))
+        , Validate.ifBlank .contactMessage ( MessageFieldError, "No point sending an empty message!" )
+        ]
+
+
+contactPageContent : Model -> List (Element Msg)
+contactPageContent model =
+    let
+        formMessage msg =
+            let
+                txt prefix =
+                    Maybe.withDefault none <| Maybe.map (\s -> text <| prefix ++ s) <| AssocList.get msg model.contactFormMessages
+            in
+            case msg of
+                SendError ->
+                    el [ Font.color orange ] <| txt ""
+
+                Success ->
+                    el [ Font.color green ] <| txt ""
+
+                _ ->
+                    el [ Font.color orange ] <| txt "⇓ "
+    in
+    [ column [ width <| maximum 800 fill, centerX, paddingXY 0 20 ]
+        [ Ui.heading1 [] [ text "Contact" ]
+        , column
+            [ width <| maximum 600 fill, spacing 10, paddingEach { top = 30, bottom = 0, left = 0, right = 0 } ]
+            [ Input.text [ width <| maximum 300 fill, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+                { onChange = UserTypedContactName
+                , text = model.contactName
+                , placeholder = Just <| Input.placeholder [] <| text "Name"
+                , label = Input.labelHidden "Name"
+                }
+            , formMessage EmailFieldError
+            , Input.email [ width <| maximum 300 fill, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+                { onChange = UserTypedContactEmail
+                , text = model.contactEmail
+                , placeholder = Just <| Input.placeholder [] <| text "Email"
+                , label = Input.labelHidden "Email"
+                }
+            , formMessage MessageFieldError
+            , Input.multiline [ width <| maximum 600 fill, height <| px 150, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+                { onChange = UserTypedContactMessage
+                , text = model.contactMessage
+                , placeholder = Just <| Input.placeholder [] <| text "Message"
+                , label = Input.labelHidden "Message"
+                , spellcheck = True
+                }
+            , el [ Border.width 3, Border.color green, Border.shadow { offset = ( -2, 2 ), blur = 2, color = paleGreen, size = 0.1 } ] <|
+                Input.button
+                    [ paddingEach { left = 30, right = 30, top = 10, bottom = 10 }
+                    , Background.color green
+                    , Border.width 1
+                    , Border.color offWhite
+                    , Border.dashed
+                    , Font.color white
+                    , Font.bold
+                    ]
+                    { onPress = Just UserSubmittedContactForm, label = text "Send" }
+            , formMessage SendError
+            , formMessage Success
+            ]
+        ]
+    ]
+
+
 view : Model -> Html Msg
 view model =
     let
         content =
             case model.route of
+                ContactPageRoute ->
+                    contactPageContent model
+
                 IndexPageRoute ->
                     indexPageContent model
 
@@ -594,6 +680,26 @@ resetViewport =
     Task.perform (\_ -> RuntimeDidSomethingIrrelevant) (Browser.Dom.setViewport 0 0)
 
 
+sendContact : Valid Model -> Cmd Msg
+sendContact validModel =
+    let
+        model =
+            fromValid validModel
+
+        body =
+            Http.multipartBody
+                [ Http.stringPart "name" model.contactName
+                , Http.stringPart "email" model.contactEmail
+                , Http.stringPart "message" model.contactMessage
+                ]
+    in
+    Http.post
+        { url = "https://hooks.zapier.com/hooks/catch/5350930/obcmlkp/silent/"
+        , body = body
+        , expect = Http.expectWhatever RuntimeSentContactForm
+        }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -602,6 +708,26 @@ update msg model =
 
         RuntimeDidSomethingIrrelevant ->
             ( model, Cmd.none )
+
+        RuntimeSentContactForm response ->
+            case response of
+                Ok _ ->
+                    ( { model
+                        | contactEmail = ""
+                        , contactName = ""
+                        , contactMessage = ""
+                        , contactFormMessages = AssocList.fromList [ ( Success, "Message sent!" ) ]
+                      }
+                    , Cmd.none
+                    )
+
+                Err err ->
+                    ( { model
+                        | contactFormMessages =
+                            AssocList.fromList [ ( SendError, "Couldn't send form (" ++ httpErrorString err ++ "). Please try again." ) ]
+                      }
+                    , Cmd.none
+                    )
 
         UserChoseVehicleAvailabilityOption option ->
             ( { model | vehicleAvailability = option }, Cmd.none )
@@ -625,6 +751,23 @@ update msg model =
 
         UserResizedWindow width height ->
             ( { model | windowSize = { height = height, width = width }, isMenuPanelOpen = False }, Cmd.none )
+
+        UserTypedContactEmail email ->
+            ( { model | contactEmail = email }, Cmd.none )
+
+        UserTypedContactName name ->
+            ( { model | contactName = name }, Cmd.none )
+
+        UserTypedContactMessage message ->
+            ( { model | contactMessage = message }, Cmd.none )
+
+        UserSubmittedContactForm ->
+            case validate contactValidator model of
+                Ok validModel ->
+                    ( { model | contactFormMessages = AssocList.empty }, sendContact validModel )
+
+                Err errors ->
+                    ( { model | contactFormMessages = AssocList.fromList errors }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg

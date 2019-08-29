@@ -20,9 +20,47 @@ type alias Vehicle =
     }
 
 
+type Availability
+    = AvailableAny
+    | AvailableNew
+
+
+type SortOrder
+    = NameSort
+    | PriceSort
+    | RangeSort
+
+
 allCommentsShort : Bool
 allCommentsShort =
     Cons.all (\v -> (String.length <| Maybe.withDefault "" v.comment) < 46) data
+
+
+availableNew : Vehicle -> Bool
+availableNew vehicle =
+    case vehicle.years of
+        Single _ ->
+            False
+
+        Range _ _ ->
+            False
+
+        RangeFrom _ ->
+            True
+
+
+filter : Availability -> Cons Vehicle -> List Vehicle
+filter availability vehicles =
+    let
+        filterFunc =
+            case availability of
+                AvailableAny ->
+                    always True
+
+                AvailableNew ->
+                    availableNew
+    in
+    Cons.filter filterFunc vehicles
 
 
 find : VehicleId -> Maybe Vehicle
@@ -63,6 +101,19 @@ pricesAsString prices =
             intAsMoneyStr from ++ "+"
 
 
+sort : SortOrder -> List Vehicle -> List Vehicle
+sort order vehicles =
+    case order of
+        NameSort ->
+            List.sortBy .id vehicles
+
+        PriceSort ->
+            List.sortBy (.price >> rangeMidpoint) vehicles
+
+        RangeSort ->
+            List.sortBy (.range >> rangeMidpoint) vehicles
+
+
 yearsAsString : SingleOrPair Year -> String
 yearsAsString years =
     case years of
@@ -97,7 +148,7 @@ data =
           , make = "BMW"
           , model = "i3"
           , price = Range 35000 85000
-          , range = Range 130 260
+          , range = Range 130 246
           , seats = [ 4 ]
           , years = RangeFrom 2013
           }
@@ -108,8 +159,8 @@ data =
           , make = "Hyundai"
           , model = "Ioniq"
           , price = Range 45000 60000
-          , range = Range 219 300
-          , seats = [ 4 ]
+          , range = Range 200 300
+          , seats = [ 5 ]
           , years = RangeFrom 2017
           }
         , { id = "hyundai/kona/2019"
@@ -134,14 +185,14 @@ data =
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
-        , { id = "kia/niro/2019"
+        , { id = "kia/niro-ev/2019"
           , batteries = [ 39, 64 ]
           , comment = Nothing
           , count = 53
           , make = "Kia"
-          , model = "Niro"
-          , price = Range 68000 74000
-          , range = Range 289 455
+          , model = "Niro EV"
+          , price = Range 68000 77000
+          , range = Range 244 384
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -152,7 +203,7 @@ data =
           , make = "Kia"
           , model = "Soul EV"
           , price = RangeFrom 35000
-          , range = Range 150 179
+          , range = Range 150 182
           , seats = [ 5 ]
           , years = RangeFrom 2015
           }
@@ -168,7 +219,7 @@ data =
           , years = RangeFrom 2019
           }
         , { id = "mitsubishi/i-miev/2009"
-          , batteries = [ 11, 14, 16 ]
+          , batteries = [ 11, 15, 16 ]
           , comment = Just "Also sold as Peugeot iOn & Citroën C-Zero"
           , count = 108
           , make = "Mitsubishi"
@@ -240,7 +291,7 @@ data =
           , make = "Tesla"
           , model = "Model 3"
           , price = Range 74000 113000
-          , range = Range 460 620
+          , range = Range 354 500
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -284,17 +335,135 @@ vehicleTextMarkup : String
 vehicleTextMarkup =
     """
 |> Page 
+    id = audi/e-tron/2019
+    text = 
+        e-tron is Audi's first mass production electric vehicle. 
+
+        It's equipped with dual electric motors. 
+
+        The so-called "virtual side mirrors", with cameras on the outside and screens 
+        on the inside of the front doors, are optional.
+
+        Audi announced a recall of some e-tron models in June 2019. 
+
+        Can be purchased new in New Zealand.
+
+|> Page 
     id = bmw/i3/2013
     text = 
-        This model had a number of revisions. 
+        The i3 was BMW's first mass-produced EV, and over 130,000 cars have been sold 
+        around the world.
 
-        It started out with a 22 kWh battery and a range of 130 km, and
-        was later upgraded to 33 kWh and 183 km. 
+        Most of the car body is made of carbon-fibre reinforced plastic. 
 
-        |> H2
-            Third revision
+        The i3 has rear-hinged rear doors to ease entry into the back seats. 
+
+        This model has had three revisions. It started out with a 22 kWh battery and
+        a range of 130 km. In 2017, the battery was upgraded to 33 kWh, extending the 
+        range to 183 km. In 2019, the battery capacity was increased again to 42 kWh, 
+        providing a range of 246 km.
         
-        The third revision will have a 42 kWh battery and a range of 260 km.
+        There is a REx variant of the car with a small petrol "range extender" engine. 
+
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = hyundai/ioniq/2017
+    text = 
+        Over 25,000 fully electric Ioniqs have been sold around the world. 
+
+        For new cars purchased in New Zealand, the battery is covered by a 10 year`/`unlimited km warranty.
+
+        The Ioniq supports fast charging up to 50 kW, allowing it to reach 80% charge in 
+        approximately 30 minutes.
+
+        The car is also available as a plug-in hybrid with a 9 kWh battery and a conventional 
+        hybrid with a 1.6 kWh battery.
+
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = hyundai/kona/2019
+    text =
+        Hyundai Kona is the first fully electric subcompact crossover. 
+
+        For new cars purchased in New Zealand, the battery is covered by a 10 year`/`160,000 km warranty.
+
+        A smaller range battery option exists but is not available in NZ.
+
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = jaguar/i-pace/2019
+    text = 
+        I-PACE represents Jaguar's first foray into fully electric vehicles. 
+
+        The car is equipped with dual electric motors. 
+
+        In addition to the boot, it has a small front storage compartment. 
+
+        For new cars purchased in New Zealand, the battery is covered by an 8 year`/`160,000 km warranty.
+
+        I-PACE supports fast charging up to 50 kW, allowing it to gain up to 270 km
+        of range per hour of charging. The on-board 7kW AC charger delivers up to 35km of range per hour
+        of charging.
+
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = kia/niro-ev/2019
+    text = 
+        For new cars purchased in New Zealand, the battery is covered by a 7 year`/`160,000 km warranty.
+
+        Niro EV supports fast charging up to 50 kW, allowing the 64 kWh model to recharge to 80% in 
+        75 minutes (and the 39 kWh model in an hour). The on-board 7kW AC charger delivers up to 40km 
+        of range per hour of charging.
+
+        The car is also available as a plug-in hybrid with a 9 kWh battery and a conventional 
+        hybrid with a 1.6 kWh battery (these are called Niro rather than Nero EV).
+
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = kia/soul-ev/2015
+    text = 
+        The battery was upgraded from 27 kWh to 30 kWh in 2018.
+
+        Soul EV cannot be purchased new in New Zealand, all cars are imported. 
+
+        It will be replaced with a new vehicle with significantly larger range in 2020.
+
+|> Page 
+    id = ldv/ev80/2019
+    text = 
+        The van can carry a maximum payload of 1,000 kg, or 1,100 kg in the larger version.
+        It is also available as a cab chassis.  
+
+        The manufacturer suggests that the battery supports fast charging, allowing it 
+        to be fully charged in as little as two hours. 
+
+|> Page 
+    id = mitsubishi/i-miev/2009
+    text = 
+        Over 45,000 cars have been sold worldwide.
+
+        The Peugeot variant is higher spec.
+
+        The 10.5 kWh and 14.5 kWh batteries available on some of the Japanese imports 
+        use the lithium titanate oxide SCiB battery technology, allowing them to withstand
+        2.5 times more charge`/`discharge cycles, and provide 1.7 times more driving range 
+        than a regular Li-ion battery. SCiB batteries can also be charged rapidly, reaching
+        80% capacity in 15 minutes. The 16 kWh battery is a regular Li-ion battery.
+
+        Can no longer be purchased new in New Zealand (used to be sold new between 2011-2014). 
+
+|> Page 
+    id = nissan/e-nv200/2014
+    text = 
+        The van was initially sold with the 24 kWh battery from Nissan Leaf. In 2018, 
+        the battery was upgraded to 40 kWh, increasing the range to almost 200 km. 
+
+        e-NV200 cannot be purchased new in New Zealand, all vehicles are imported. 
 
 |> Page 
     id = nissan/leaf/2011
@@ -302,10 +471,15 @@ vehicleTextMarkup =
         Note that the count of registered vehicles includes the completely different
         next generation of this model. 
 
+        A small number of vehicles were sold new in New Zealand, however Nissan stopped sales
+        of new cars, so the majority of vehicles are Japanese imports (with some coming from
+        the UK as well). 
+
 |> Page 
     id = nissan/leaf/2018
     text = 
         Note that the count of registered vehicles includes the completely different
         previous generation of this model, currently more widespread by far. 
 
+        Can be purchased new in New Zealand.
 """

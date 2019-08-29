@@ -1,6 +1,7 @@
 module Util exposing (..)
 
 import FormatNumber exposing (format)
+import Http
 import String.Extra as String
 
 
@@ -39,6 +40,25 @@ equalBy f a b =
 flip : (b -> a -> c) -> a -> b -> c
 flip f a b =
     f b a
+
+
+httpErrorString : Http.Error -> String
+httpErrorString error =
+    case error of
+        Http.BadBody message ->
+            "Unable to handle response: " ++ message
+
+        Http.BadStatus statusCode ->
+            "Server error: " ++ String.fromInt statusCode
+
+        Http.BadUrl url ->
+            "Invalid URL: " ++ url
+
+        Http.NetworkError ->
+            "Network error"
+
+        Http.Timeout ->
+            "Request timeout"
 
 
 undasherise : String -> String
