@@ -132,8 +132,8 @@ data =
     cons
         { id = "audi/e-tron/2019"
         , batteries = [ 95 ]
-        , comment = Just "Available soon"
-        , count = 28
+        , comment = Nothing
+        , count = 62
         , make = "Audi"
         , model = "e-tron"
         , price = Range 149000 180000
@@ -143,8 +143,8 @@ data =
         }
         [ { id = "bmw/i3/2013"
           , batteries = [ 22, 33, 42 ]
-          , comment = Just "260km range model coming in the near future"
-          , count = 199
+          , comment = Just "246km range model coming in the near future"
+          , count = 213
           , make = "BMW"
           , model = "i3"
           , price = Range 35000 85000
@@ -155,7 +155,7 @@ data =
         , { id = "hyundai/ioniq/2017"
           , batteries = [ 28, 38 ]
           , comment = Just "300km range model coming in the near future"
-          , count = 544
+          , count = 546
           , make = "Hyundai"
           , model = "Ioniq"
           , price = Range 45000 60000
@@ -166,7 +166,7 @@ data =
         , { id = "hyundai/kona/2019"
           , batteries = [ 64 ]
           , comment = Nothing
-          , count = 341
+          , count = 373
           , make = "Hyundai"
           , model = "Kona"
           , price = Range 74000 78000
@@ -177,7 +177,7 @@ data =
         , { id = "jaguar/i-pace/2019"
           , batteries = [ 90 ]
           , comment = Nothing
-          , count = 51
+          , count = 63
           , make = "Jaguar"
           , model = "I-PACE"
           , price = Range 160000 195000
@@ -188,7 +188,7 @@ data =
         , { id = "kia/niro-ev/2019"
           , batteries = [ 39, 64 ]
           , comment = Nothing
-          , count = 53
+          , count = 58
           , make = "Kia"
           , model = "Niro EV"
           , price = Range 68000 77000
@@ -210,7 +210,7 @@ data =
         , { id = "ldv/ev80/2019"
           , batteries = [ 56 ]
           , comment = Just "Range is manufacturer claim, not EPA"
-          , count = 36
+          , count = 39
           , make = "LDV"
           , model = "EV80"
           , price = Single 50000
@@ -221,7 +221,7 @@ data =
         , { id = "mitsubishi/i-miev/2009"
           , batteries = [ 11, 15, 16 ]
           , comment = Just "Also sold as Peugeot iOn & Citroën C-Zero"
-          , count = 108
+          , count = 109
           , make = "Mitsubishi"
           , model = "i-MiEV"
           , price = RangeFrom 11000
@@ -232,7 +232,7 @@ data =
         , { id = "nissan/e-nv200/2014"
           , batteries = [ 24, 40 ]
           , comment = Nothing
-          , count = 359
+          , count = 369
           , make = "Nissan"
           , model = "e-NV200"
           , price = Range 28000 65000
@@ -243,7 +243,7 @@ data =
         , { id = "nissan/leaf/2011"
           , batteries = [ 24, 30 ]
           , comment = Nothing
-          , count = 8160
+          , count = 8453
           , make = "Nissan"
           , model = "Leaf"
           , price = Range 10000 30000
@@ -251,7 +251,7 @@ data =
           , seats = [ 5 ]
           , years = Range 2011 2017
           }
-        , { id = "nissan/leaf/2018"
+        , { id = "nissan/leaf/2017"
           , batteries = [ 40, 62 ]
           , comment = Just "Longer range model coming in 2019"
           , count = 8160
@@ -260,12 +260,12 @@ data =
           , price = Range 50000 59000
           , range = Range 243 363
           , seats = [ 5 ]
-          , years = RangeFrom 2018
+          , years = RangeFrom 2017
           }
         , { id = "renault/kangoo/2011"
           , batteries = [ 22, 33 ]
           , comment = Nothing
-          , count = 53
+          , count = 56
           , make = "Renault"
           , model = "Kangoo"
           , price = Range 46000 75000
@@ -285,9 +285,9 @@ data =
           , years = RangeFrom 2013
           }
         , { id = "tesla/model-3/2019"
-          , batteries = [ 55, 65 ]
+          , batteries = [ 62, 75 ]
           , comment = Nothing
-          , count = 3
+          , count = 60
           , make = "Tesla"
           , model = "Model 3"
           , price = Range 74000 113000
@@ -298,7 +298,7 @@ data =
         , { id = "tesla/model-s/2014"
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
-          , count = 339
+          , count = 342
           , make = "Tesla"
           , model = "Model S"
           , price = Range 71000 189000
@@ -309,7 +309,7 @@ data =
         , { id = "tesla/model-x/2017"
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
-          , count = 317
+          , count = 318
           , make = "Tesla"
           , model = "Model X"
           , price = Range 110000 207000
@@ -320,7 +320,7 @@ data =
         , { id = "volkswagen/e-golf/2015"
           , batteries = [ 24, 36 ]
           , comment = Nothing
-          , count = 243
+          , count = 257
           , make = "Volkswagen"
           , model = "e-Golf"
           , price = Range 40000 69000
@@ -361,7 +361,8 @@ vehicleTextMarkup =
         This model has had three revisions. It started out with a 22 kWh battery and
         a range of 130 km. In 2017, the battery was upgraded to 33 kWh, extending the 
         range to 183 km. In 2019, the battery capacity was increased again to 42 kWh, 
-        providing a range of 246 km.
+        providing a range of 246 km. Cars with this battery should become available 
+        soon.
         
         There is a REx variant of the car with a small petrol "range extender" engine. 
 
@@ -373,6 +374,8 @@ vehicleTextMarkup =
         Over 25,000 fully electric Ioniqs have been sold around the world. 
 
         For new cars purchased in New Zealand, the battery is covered by a 10 year`/`unlimited km warranty.
+
+        A 300km range model is coming in the near future.
 
         The Ioniq supports fast charging up to 50 kW, allowing it to reach 80% charge in 
         approximately 30 minutes.
@@ -439,15 +442,19 @@ vehicleTextMarkup =
         The van can carry a maximum payload of 1,000 kg, or 1,100 kg in the larger version.
         It is also available as a cab chassis.  
 
+        The range listed is claimed by the manufacturer (EPA range is not available).
+
         The manufacturer suggests that the battery supports fast charging, allowing it 
         to be fully charged in as little as two hours. 
+
+        Can be purchased new in New Zealand.
 
 |> Page 
     id = mitsubishi/i-miev/2009
     text = 
         Over 45,000 cars have been sold worldwide.
 
-        The Peugeot variant is higher spec.
+        This car was also sold rebadged as Peugeot iOn & Citroën C-Zero. The Peugeot variant is higher spec.
 
         The 10.5 kWh and 14.5 kWh batteries available on some of the Japanese imports 
         use the lithium titanate oxide SCiB battery technology, allowing them to withstand
@@ -460,26 +467,152 @@ vehicleTextMarkup =
 |> Page 
     id = nissan/e-nv200/2014
     text = 
-        The van was initially sold with the 24 kWh battery from Nissan Leaf. In 2018, 
+        This van was initially sold with the 24 kWh battery from Nissan Leaf. In 2018, 
         the battery was upgraded to 40 kWh, increasing the range to almost 200 km. 
+
+        Available in both cargo and passenger configurations.
 
         e-NV200 cannot be purchased new in New Zealand, all vehicles are imported. 
 
 |> Page 
     id = nissan/leaf/2011
     text = 
-        Note that the count of registered vehicles includes the completely different
-        next generation of this model. 
+        This is currently by far the most popular EV in New Zealand. (But note that 
+        the count of registered vehicles includes the completely different
+        next generation of this model.) Over 400,000 vehicles have been sold around
+        the world.
 
-        A small number of vehicles were sold new in New Zealand, however Nissan stopped sales
-        of new cars, so the majority of vehicles are Japanese imports (with some coming from
-        the UK as well). 
+        Please note that it is known to have brake malfunctions in some circumstances. 
+
+        A small number of vehicles were sold new in New Zealand between 2012-2014, 
+        however Nissan stopped sales of new cars here, so the majority of vehicles 
+        are Japanese imports (with some coming from the UK as well). 
+
+        There were several revisions of this model. The first revision, produced in 
+        2011-2012, has a slightly smaller boot. 
+
+        The battery capacity is known to degrade with time at a rate of roughly 3% per year. 
+
+        From 2015 onwards, the battery was improved to be more heat tolerant, and 
+        appears to degrade at a slightly lower rate. 
+
+        In 2016, a higher capacity 30 kWh battery option was added. 
+
+        Sam Holford has written a great 
+        [detailed guide]{ link | url = https://samholford.github.io/leafguide/ } about this model.
 
 |> Page 
-    id = nissan/leaf/2018
+    id = nissan/leaf/2017
     text = 
-        Note that the count of registered vehicles includes the completely different
-        previous generation of this model, currently more widespread by far. 
+        This is the second, completely new generation of New Zealand's most popular EV. 
+        
+        (Note that the count of registered vehicles includes the completely different
+        previous generation of this model, currently more widespread by far.)
+
+        The battery is air cooled, without an active cooling system, same as the 
+        previous generation of the Leaf. 
+
+        A 363km range variant with a 62kWh battery should become available in 2019.
 
         Can be purchased new in New Zealand.
+
+|> Page 
+    id = renault/kangoo/2011
+    text = 
+        Over 38,000 vans have been sold around the world. 
+
+        Available in a cargo or passenger configuration.
+
+        Cannot be purchased new in New Zealand.
+
+|> Page 
+    id = renault/zoe/2013
+    text = 
+        Over 133,000 vehicles have been sold around the world. 
+
+        Zoe only supports AC charging, from 2kW to 22kW. At 22kW, a full charge
+        takes 2 hours 40 minutes. Vehicles from 2017 onwards also have an option for 
+        43kW charging, which provides 80% charge in about an hour. 
+        
+        Can be purchased new in New Zealand.
+
+|> Page 
+    id = tesla/model-3/2019
+    text = 
+        This is the newest model in Tesla's lineup.
+
+        The interior is distinct in its lack of buttons: everything is controlled
+        via a centre-mounted touch screen and two scroll wheels on the steering wheel. 
+        All models come with a glass roof. There is a small luggage compartment in
+        the front of the car, in addition to the boot. 
+
+        There is a rear-wheel drive, single motor variant, as well as an all-wheel
+        drive, dual-motor variant.
+
+        For new cars purchased in New Zealand, the battery and drive unit are 
+        covered by a warranty for 8 years or 160,000 km
+        (or 192,000km for the Long Range variant), 
+        whichever comes first, with minimum 70% retention of battery capacity over 
+        the warranty period.
+
+        AC charging allows up to 70km of range to be added in an hour, while DC
+        charging allows up to 290km of range to be added in 15 minutes (via the 
+        latest Tesla Supercharger, not deployed in New Zealand currently).
+
+        Tesla regularly updates the software in the car over the air, adding new 
+        functionality. 
+
+        Can be purchased new in New Zealand via the Tesla website. 
+
+|> Page 
+    id = tesla/model-s/2014
+    text = 
+        Model S has been the longest range EV since 2012, and remains so at present. 
+
+        It is also the fastest accelerating production car in the world. 
+
+        There is a rear-wheel drive, single motor variant, as well as an all-wheel
+        drive, dual-motor variant.
+
+        For new cars purchased in New Zealand, the battery and drive unit are covered 
+        by a warranty for 8 years.
+
+        The interior can have 5 or 7 seats. The car has a small luggage compartment 
+        in the front, in addition to the boot. 
+
+        Tesla regularly updates the software in the car over the air, adding new 
+        functionality. 
+
+        Can be purchased new in New Zealand via the Tesla website. 
+
+|> Page 
+    id = tesla/model-x/2017
+    text = 
+        Over 100,000 Model X vehicles have been sold around the world.
+
+        The car is equipped with dual electric motors in an all-wheel drive configuration.
+
+        For new cars purchased in New Zealand, the battery and drive unit are covered 
+        by a warranty for 8 years.
+
+        The interior can have 5, 6, or 7 seats. The car has distinctive gull-wing 
+        front doors. It has a smaller luggage compartment in the front, in addition 
+        to the boot. 
+
+        Tesla regularly updates the software in the car over the air, adding new 
+        functionality. 
+
+        Can be purchased new in New Zealand via the Tesla website. 
+
+|> Page 
+    id = volkswagen/e-golf/2015
+    text = 
+        From 2017, e-Golf is equipped with a larger 36kWh battery.
+
+        Using Type 2`/`CCS fast charging, the battery can be charged to 80% in about 45 minutes.
+        However, the DC fast charging function is limited to two consecutive uses to avoid
+        overheating the battery. 
+
+        Can be purchased new in New Zealand.
+
 """
