@@ -322,8 +322,8 @@ navigationMenuPanel =
     let
         linkEls =
             navigationMenuLinks
-                |> List.map (\navLink -> link [ alignRight, Font.size 18, Font.color green ] navLink)
-                |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
+                |> List.map (\navLink -> link [ height <| px 22, alignRight, Font.size 18, Font.color green ] navLink)
+                |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] <| text " ")
     in
     row [ width fill, height fill ]
         [ el
@@ -1442,7 +1442,7 @@ pageTextMarkup =
             align = Left
             border = False
 
-        Electric vehicle numbers are rising steadily, but so far only account for 15,500
+        Electric vehicle numbers are rising steadily, but so far only account for 16,000
         out of our 3.8 million light vehicles. 3.8 million electric vehicles would
         demand 17% more electricity, which can be met with renewable power stations that
         have consent to be built.
@@ -1564,7 +1564,7 @@ pageTextMarkup =
             - Motorbikes\u{200B}: [Ubco]{ link | url = \u{200B}https://ubcobikes.com\u{200B} } (Kiwi made); [Zero Motorcycles]{ link | url = https://\u{200B}zeromotorcycles.com\u{200B} }, \u{200B}Harley Davidson Livewire (2019).
             - Formula \u{200B}racing\u{200B} cars compete in [Formula E]{ link | url = https://\u{200B}fiaFormulaE.com }
             - An [electric supercar]{ link | url = https://www.nio.io/ep9\u{200B} } is the fastest around the gruelling \u{200B}Nurburgring circuit\u{200B}.
-            - Over 400 one-seat "Paxster" ully electric delivery buggies are used by NZ Post.
+            - Over 400 one-seat "Paxster" fully electric delivery buggies are used by NZ Post.
             - 4WD Utes: \u{200B}Coming soon from \u{200B}[Great Wall]{ link | url = https://greatwall.co.nz\u{200B} }, [Rivian]{ link | url = https://\u{200B}rivian.com\u{200B} }, [Bollinger Motors]{ link | url = https://\u{200B}bollingermotors.com\u{200B} }, and [Tesla]{ link | url = https://tesla.com }.
             - Trucks\u{200B} are made by [Zero Emission Vehicles]{ link | url = https://\u{200B}zevnz.com }\u{200B} and Waste Management locally. 
             - Electric truck importers include [Etrucks]{ link | url = http://etrucks.co.nz }
