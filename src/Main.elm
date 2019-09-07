@@ -184,7 +184,7 @@ vehicleCard vehicle =
                 , Border.color green
                 , Border.shadow { offset = ( 1, 1 ), blur = 3, color = grey, size = 0.3 }
                 ]
-                [ Ui.heading2 [] [ text makeModel ]
+                [ el (Ui.headingAttrs ++ [ Font.size 26, Region.heading 2 ]) <| text makeModel
                 , el [ padding 1, Border.rounded 2, Border.width 1, Border.color Color.grey ] <|
                     image [ width <| px 300 ] { src = imageUrl, description = makeModel }
                 , specSummary
