@@ -35,7 +35,7 @@ smallFont =
 
 footerLink : List (Attribute msg) -> { url : String, label : Element msg } -> Element msg
 footerLink attrs params =
-    link ([ Font.color green ] ++ attrs) params
+    link ([ Font.color paleBlue ] ++ attrs) params
 
 
 headingAttrs =
