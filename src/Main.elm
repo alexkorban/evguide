@@ -218,14 +218,22 @@ vehicleDetails model vehicle =
                 [ vehicleTextEl model.windowSize ]
 
         spec =
-            [ ( "Range", rangeAsString vehicle.range )
-            , ( "Price", pricesAsString vehicle.price )
-            , ( "Years", yearsAsString vehicle.years )
-            , ( "Batteries", intListAsString vehicle.batteries ++ " kWh" )
-            , ( "Seats", intListAsString vehicle.seats )
-            , ( "No. in NZ", String.fromInt vehicle.count )
+            [ ( "Range", text <| rangeAsString vehicle.range )
+            , ( "Price", text <| pricesAsString vehicle.price )
+            , ( "Years", text <| yearsAsString vehicle.years )
+            , ( "Safety"
+              , paragraph []
+                    [ text <| safetyRatingAsString vehicle.safetyRating
+                    , text " ("
+                    , Ui.link [] { url = vehicle.safetyRating.url, label = text <| safetyOrgAsString vehicle.safetyRating.org }
+                    , text ")"
+                    ]
+              )
+            , ( "Batteries", text <| intListAsString vehicle.batteries ++ " kWh" )
+            , ( "Seats", text <| intListAsString vehicle.seats )
+            , ( "No. in NZ", text <| String.fromInt vehicle.count )
             ]
-                |> List.map (\( label, value ) -> row [ width fill, Ui.smallFont ] [ el [] <| text label, el [ alignRight ] <| text value ])
+                |> List.map (\( label, value ) -> row [ width fill, Ui.smallFont ] [ el [] <| text label, el [ alignRight ] <| value ])
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
                 |> flip column
     in
@@ -303,7 +311,7 @@ navigation model =
                 [ Ui.menuIcon [ onClick UserClickedMenuIcon ] ]
 
             else
-                List.map (\navLink -> link [ alignRight, Font.size 15, Font.color green ] navLink) navigationLinks
+                List.map (\navLink -> Ui.link [ alignRight, Font.size 15 ] navLink) navigationLinks
     in
     column [ width fill ]
         [ row [ width fill, height <| px 60, padding 10, Region.navigation, spacing 20 ] <|
@@ -322,7 +330,7 @@ navigationMenuPanel =
     let
         linkEls =
             navigationMenuLinks
-                |> List.map (\navLink -> link [ height <| px 22, alignRight, Font.size 18, Font.color green ] navLink)
+                |> List.map (\navLink -> Ui.link [ height <| px 22, alignRight, Font.size 18 ] navLink)
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] <| text " ")
     in
     row [ width fill, height fill ]
@@ -415,7 +423,7 @@ footer model =
                 ]
               <|
                 List.map
-                    (\navLink -> link [ Font.color paleBlue, Font.size 13 ] navLink)
+                    (\navLink -> Ui.footerLink [ Font.size 13 ] navLink)
                     footerLinks
             , column
                 [ width
@@ -437,7 +445,7 @@ footer model =
             , textColumn [ width <| fillPortion 2, spacing 15, alignTop, Font.color white, Font.size 13 ]
                 [ paragraph []
                     [ text "Some of the content is from the "
-                    , link [ Font.color paleBlue ] { url = "https://www.electricheaven.nz", label = text "Electric car guide" }
+                    , Ui.footerLink [] { url = "https://www.electricheaven.nz", label = text "Electric car guide" }
                     , text " by Sigurd Magnusson, released under the Creative Commons Attributions licence."
                     ]
                 , paragraph []
@@ -447,7 +455,7 @@ footer model =
                     ]
                 , paragraph []
                     [ text "A project of "
-                    , link [ Font.color paleBlue ] { url = "https://korban.net", label = text "korban.net" }
+                    , Ui.footerLink [] { url = "https://korban.net", label = text "korban.net" }
                     , text "."
                     ]
                 ]
@@ -579,28 +587,49 @@ contactPageContent model =
         [ Ui.heading1 [] [ text "Contact" ]
         , column
             [ width <| maximum 600 fill, spacing 10, paddingEach { top = 30, bottom = 0, left = 0, right = 0 } ]
-            [ Input.text [ width <| maximum 300 fill, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+            [ Input.text
+                [ width <| maximum 300 fill
+                , Background.color veryPaleBlue
+                , Border.color blue
+                , Border.rounded 0
+                ]
                 { onChange = UserTypedContactName
                 , text = model.contactName
                 , placeholder = Just <| Input.placeholder [] <| text "Name"
                 , label = Input.labelHidden "Name"
                 }
             , formMessage EmailFieldError
-            , Input.email [ width <| maximum 300 fill, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+            , Input.email
+                [ width <| maximum 300 fill
+                , Background.color veryPaleBlue
+                , Border.color blue
+                , Border.rounded 0
+                ]
                 { onChange = UserTypedContactEmail
                 , text = model.contactEmail
                 , placeholder = Just <| Input.placeholder [] <| text "Email"
                 , label = Input.labelHidden "Email"
                 }
             , formMessage MessageFieldError
-            , Input.multiline [ width <| maximum 600 fill, height <| px 150, Background.color veryPaleBlue, Border.color blue, Border.rounded 0 ]
+            , Input.multiline
+                [ width <| maximum 600 fill
+                , height <| px 150
+                , Background.color veryPaleBlue
+                , Border.color blue
+                , Border.rounded 0
+                ]
                 { onChange = UserTypedContactMessage
                 , text = model.contactMessage
                 , placeholder = Just <| Input.placeholder [] <| text "Message"
                 , label = Input.labelHidden "Message"
                 , spellcheck = True
                 }
-            , el [ Border.width 3, Border.color green, Border.shadow { offset = ( -2, 2 ), blur = 2, color = paleGreen, size = 0.1 } ] <|
+            , el
+                [ Border.width 3
+                , Border.color green
+                , Border.shadow { offset = ( -2, 2 ), blur = 2, color = paleGreen, size = 0.1 }
+                ]
+              <|
                 Input.button
                     [ paddingEach { left = 30, right = 30, top = 10, bottom = 10 }
                     , Background.color green

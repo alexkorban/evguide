@@ -33,6 +33,11 @@ smallFont =
     Font.size <| round <| fontScale -1
 
 
+footerLink : List (Attribute msg) -> { url : String, label : Element msg } -> Element msg
+footerLink attrs params =
+    link ([ Font.color green ] ++ attrs) params
+
+
 headingAttrs =
     [ Font.bold, Font.color darkBlue, headingTypeface, htmlAttribute <| Attr.style "clear" "both" ]
 
@@ -55,6 +60,11 @@ heading3 attrs =
 heading4 : List (Attribute msg) -> List (Element msg) -> Element msg
 heading4 attrs =
     paragraph ([ Font.size <| round <| fontScale 1, Region.heading 4 ] ++ headingAttrs ++ attrs)
+
+
+link : List (Attribute msg) -> { url : String, label : Element msg } -> Element msg
+link attrs params =
+    Element.link ([ Font.color green ] ++ attrs) params
 
 
 logo : Color -> List (Attribute msg) -> Element msg

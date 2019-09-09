@@ -6,6 +6,32 @@ import Types exposing (..)
 import Util exposing (..)
 
 
+type Availability
+    = AvailableAny
+    | AvailableNew
+
+
+type SafetyOrg
+    = ANCAP
+    | EuroNCAP
+    | NHTSA
+
+
+type SortOrder
+    = NameSort
+    | PriceSort
+    | RangeSort
+
+
+type alias SafetyRating =
+    { comment : Maybe String
+    , org : SafetyOrg
+    , stars : Int
+    , url : String
+    , year : Year
+    }
+
+
 type alias Vehicle =
     { id : VehicleId
     , batteries : List Int
@@ -15,20 +41,10 @@ type alias Vehicle =
     , model : String
     , price : SingleOrPair Int
     , range : SingleOrPair Int
+    , safetyRating : SafetyRating
     , seats : List Int
     , years : SingleOrPair Int
     }
-
-
-type Availability
-    = AvailableAny
-    | AvailableNew
-
-
-type SortOrder
-    = NameSort
-    | PriceSort
-    | RangeSort
 
 
 allCommentsShort : Bool
@@ -101,6 +117,24 @@ pricesAsString prices =
             intAsMoneyStr from ++ "+"
 
 
+safetyOrgAsString : SafetyOrg -> String
+safetyOrgAsString org =
+    case org of
+        ANCAP ->
+            "ANCAP"
+
+        EuroNCAP ->
+            "EuroNCAP"
+
+        NHTSA ->
+            "NHTSA"
+
+
+safetyRatingAsString : SafetyRating -> String
+safetyRatingAsString rating =
+    String.fromInt rating.year ++ " " ++ String.repeat rating.stars "⭑"
+
+
 sort : SortOrder -> List Vehicle -> List Vehicle
 sort order vehicles =
     case order of
@@ -138,6 +172,13 @@ data =
         , model = "e-tron"
         , price = Range 149000 180000
         , range = Single 328
+        , safetyRating =
+            { comment = Nothing
+            , org = EuroNCAP
+            , stars = 5
+            , url = "https://www.euroncap.com/en/results/audi/e-tron/35869"
+            , year = 2019
+            }
         , seats = [ 5 ]
         , years = RangeFrom 2019
         }
@@ -149,6 +190,13 @@ data =
           , model = "i3"
           , price = Range 35000 85000
           , range = Range 130 246
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/bmw/i3/0ddbe4"
+                , year = 2014
+                }
           , seats = [ 4 ]
           , years = RangeFrom 2013
           }
@@ -160,6 +208,13 @@ data =
           , model = "Ioniq"
           , price = Range 45000 60000
           , range = Range 200 300
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/hyundai/ioniq/9043d8"
+                , year = 2016
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2017
           }
@@ -171,6 +226,13 @@ data =
           , model = "Kona"
           , price = Range 74000 78000
           , range = Single 415
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/hyundai/kona/61f948"
+                , year = 2017
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -182,6 +244,13 @@ data =
           , model = "I-PACE"
           , price = Range 160000 195000
           , range = Single 377
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/jaguar/i-pace/360c05"
+                , year = 2018
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -193,6 +262,13 @@ data =
           , model = "Niro EV"
           , price = Range 68000 77000
           , range = Range 244 384
+          , safetyRating =
+                { comment = Just "Only hybrid versions tested"
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/kia/niro/c84f30"
+                , year = 2016
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -204,6 +280,13 @@ data =
           , model = "Soul EV"
           , price = RangeFrom 35000
           , range = Range 150 182
+          , safetyRating =
+                { comment = Nothing
+                , org = EuroNCAP
+                , stars = 4
+                , url = "https://www.euroncap.com/en/results/kia/soul-ev/7872"
+                , year = 2014
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2015
           }
@@ -215,6 +298,13 @@ data =
           , model = "EV80"
           , price = Single 50000
           , range = Single 180
+          , safetyRating =
+                { comment = Just "Only petrol versions tested"
+                , org = ANCAP
+                , stars = 3
+                , url = "https://www.ancap.com.au/safety-ratings/ldv/v80/2b54a9"
+                , year = 2013
+                }
           , seats = [ 3 ]
           , years = RangeFrom 2019
           }
@@ -226,6 +316,13 @@ data =
           , model = "i-MiEV"
           , price = RangeFrom 11000
           , range = Range 75 100
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 4
+                , url = "https://www.ancap.com.au/safety-ratings/mitsubishi/i-miev/667569"
+                , year = 2011
+                }
           , seats = [ 4 ]
           , years = RangeFrom 2009
           }
@@ -237,6 +334,13 @@ data =
           , model = "e-NV200"
           , price = Range 28000 65000
           , range = Range 121 194
+          , safetyRating =
+                { comment = Nothing
+                , org = EuroNCAP
+                , stars = 3
+                , url = "https://www.euroncap.com/en/results/nissan/e-nv200-evalia/7880"
+                , year = 2014
+                }
           , seats = [ 2, 5, 7 ]
           , years = RangeFrom 2014
           }
@@ -248,6 +352,13 @@ data =
           , model = "Leaf"
           , price = Range 10000 30000
           , range = Range 117 172
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/nissan/leaf/278e6d"
+                , year = 2011
+                }
           , seats = [ 5 ]
           , years = Range 2011 2017
           }
@@ -259,6 +370,13 @@ data =
           , model = "Leaf"
           , price = Range 50000 59000
           , range = Range 243 363
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/nissan/leaf/c28310"
+                , year = 2018
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2017
           }
@@ -270,6 +388,13 @@ data =
           , model = "Kangoo"
           , price = Range 46000 75000
           , range = Range 120 190
+          , safetyRating =
+                { comment = Just "Only petrol versions tested"
+                , org = ANCAP
+                , stars = 4
+                , url = "https://www.ancap.com.au/safety-ratings/renault/kangoo/5654ac"
+                , year = 2011
+                }
           , seats = [ 2, 5 ]
           , years = RangeFrom 2011
           }
@@ -281,6 +406,13 @@ data =
           , model = "Zoe"
           , price = Range 30000 69000
           , range = Range 140 280
+          , safetyRating =
+                { comment = Nothing
+                , org = EuroNCAP
+                , stars = 5
+                , url = "https://www.euroncap.com/en/results/renault/zoe/8889"
+                , year = 2013
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2013
           }
@@ -292,6 +424,13 @@ data =
           , model = "Model 3"
           , price = Range 74000 113000
           , range = Range 354 500
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/tesla/model-3/70118a"
+                , year = 2019
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2019
           }
@@ -303,6 +442,13 @@ data =
           , model = "Model S"
           , price = Range 71000 189000
           , range = Range 401 595
+          , safetyRating =
+                { comment = Nothing
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/tesla/model-s/82b32c"
+                , year = 2015
+                }
           , seats = [ 5, 7 ]
           , years = RangeFrom 2014
           }
@@ -314,6 +460,13 @@ data =
           , model = "Model X"
           , price = Range 110000 207000
           , range = Range 383 523
+          , safetyRating =
+                { comment = Just "Only US results available"
+                , org = NHTSA
+                , stars = 5
+                , url = "https://www.nhtsa.gov/vehicle/2019/TESLA/MODEL%252520X%252520P100D/SUV/AWD"
+                , year = 2019
+                }
           , seats = [ 5, 6, 7 ]
           , years = RangeFrom 2017
           }
@@ -325,6 +478,13 @@ data =
           , model = "e-Golf"
           , price = Range 40000 69000
           , range = Range 133 201
+          , safetyRating =
+                { comment = Just "Only fossil fuel versions tested"
+                , org = ANCAP
+                , stars = 5
+                , url = "https://www.ancap.com.au/safety-ratings/volkswagen/golf/7cda61"
+                , year = 2013
+                }
           , seats = [ 5 ]
           , years = RangeFrom 2015
           }
