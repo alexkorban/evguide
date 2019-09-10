@@ -49,6 +49,7 @@ type Msg
     | UserClickedLink UrlRequest
     | UserClickedMenuIcon
     | UserClickedOutsideMenuPanel
+    | UserClickedSafetyDetailsButton
     | UserChoseVehicleAvailabilityOption Vehicle.Availability
     | UserChoseVehicleSortOrder Vehicle.SortOrder
     | UserResizedWindow Int Int
@@ -68,6 +69,7 @@ type alias Model =
     , navKey : Nav.Key
     , pageText : PageDict Msg
     , route : GuideRoute
+    , shouldShowSafetyDetails : Bool
     , vehicleAvailability : Vehicle.Availability
     , vehicleSortOrder : Vehicle.SortOrder
     , vehicleText : PageDict Msg
@@ -132,6 +134,7 @@ init flags url navKey =
       , navKey = navKey
       , pageText = Result.withDefault Dict.empty pageTextRes
       , route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url
+      , shouldShowSafetyDetails = False
       , vehicleAvailability = AvailableAny
       , vehicleSortOrder = NameSort
       , vehicleText = Result.withDefault Dict.empty vehicleTextRes
@@ -217,23 +220,39 @@ vehicleDetails model vehicle =
             paragraph [ width <| fillPortion 3 ]
                 [ vehicleTextEl model.windowSize ]
 
-        spec =
-            [ ( "Range", text <| rangeAsString vehicle.range )
-            , ( "Price", text <| pricesAsString vehicle.price )
-            , ( "Years", text <| yearsAsString vehicle.years )
-            , ( "Safety"
-              , paragraph []
-                    [ text <| safetyRatingAsString vehicle.safetyRating
-                    , text " ("
-                    , Ui.link [] { url = vehicle.safetyRating.url, label = text <| safetyOrgAsString vehicle.safetyRating.org }
+        specItem label value =
+            row [ width fill ] [ text label, el [ alignRight ] value ]
+
+        safetySpecItem =
+            specItem "Safety" <| Ui.textButton [ onClick UserClickedSafetyDetailsButton ] <| text <| safetyRatingAsString vehicle.safetyRating
+
+        safetyDetails =
+            column [ spacing 10, paddingEach { top = 5, bottom = 0, left = 0, right = 0 }, Border.dotted, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }, Border.color lightGrey ]
+                [ Maybe.withDefault none <| Maybe.map (\s -> text <| "Note: " ++ s) vehicle.safetyRating.comment
+                , paragraph []
+                    [ text <| "Tested by: " ++ safetyOrgAsString vehicle.safetyRating.org ++ " ("
+                    , Ui.link [] { url = vehicle.safetyRating.url, label = text "See details" }
                     , text ")"
                     ]
-              )
-            , ( "Batteries", text <| intListAsString vehicle.batteries ++ " kWh" )
-            , ( "Seats", text <| intListAsString vehicle.seats )
-            , ( "No. in NZ", text <| String.fromInt vehicle.count )
+                , paragraph [] [ text "Safety requirements are continuously strengthened, so a 5-star rated vehicle in 2019 is safer than a 5-star rated vehicle from, say, 2011." ]
+                ]
+
+        spec =
+            [ specItem "Range" <| text <| rangeAsString vehicle.range
+            , specItem "Price" <| text <| pricesAsString vehicle.price
+            , specItem "Years" <| text <| yearsAsString vehicle.years
+            , if model.shouldShowSafetyDetails then
+                column [ width fill, spacing 5 ]
+                    [ safetySpecItem
+                    , safetyDetails
+                    ]
+
+              else
+                safetySpecItem
+            , specItem "Batteries" <| text <| intListAsString vehicle.batteries ++ " kWh"
+            , specItem "Seats" <| text <| intListAsString vehicle.seats
+            , specItem "No. in NZ" <| text <| String.fromInt vehicle.count
             ]
-                |> List.map (\( label, value ) -> row [ width fill, Ui.smallFont ] [ el [] <| text label, el [ alignRight ] <| value ])
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)
                 |> flip column
     in
@@ -263,6 +282,7 @@ vehicleDetails model vehicle =
                     , bottom = 0
                     }
                 , Border.color paleBlue
+                , Ui.smallFont
                 , Background.color offWhite
                 ]
             ]
@@ -729,37 +749,53 @@ sendContact validModel =
         }
 
 
+noCommand : Model -> ( Model, Cmd Msg )
+noCommand model =
+    ( model, Cmd.none )
+
+
+withCommand : Cmd Msg -> Model -> ( Model, Cmd Msg )
+withCommand cmd model =
+    ( model, cmd )
+
+
+resetStateOnPageChange : Model -> Model
+resetStateOnPageChange model =
+    { model | isMenuPanelOpen = False, shouldShowSafetyDetails = False }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         RuntimeChangedUrl url ->
-            ( { model | route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url }, resetViewport )
+            { model | route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url }
+                |> withCommand resetViewport
 
         RuntimeDidSomethingIrrelevant ->
-            ( model, Cmd.none )
+            model
+                |> noCommand
 
         RuntimeSentContactForm response ->
             case response of
                 Ok _ ->
-                    ( { model
+                    { model
                         | contactEmail = ""
                         , contactName = ""
                         , contactMessage = ""
                         , contactFormMessages = AssocList.fromList [ ( Success, "Message sent!" ) ]
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        |> noCommand
 
                 Err err ->
-                    ( { model
+                    { model
                         | contactFormMessages =
                             AssocList.fromList [ ( SendError, "Couldn't send form (" ++ httpErrorString err ++ "). Please try again." ) ]
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        |> noCommand
 
         UserChoseVehicleAvailabilityOption option ->
-            ( { model | vehicleAvailability = option }, Cmd.none )
+            { model | vehicleAvailability = option }
+                |> noCommand
 
         UserChoseVehicleSortOrder order ->
             ( { model | vehicleSortOrder = order }, Cmd.none )
@@ -767,36 +803,51 @@ update msg model =
         UserClickedLink urlRequest ->
             case urlRequest of
                 Internal url ->
-                    ( { model | isMenuPanelOpen = False }, Nav.pushUrl model.navKey <| Url.toString url )
+                    model
+                        |> resetStateOnPageChange
+                        |> withCommand (Nav.pushUrl model.navKey <| Url.toString url)
 
                 External url ->
-                    ( model, Nav.load url )
+                    model
+                        |> withCommand (Nav.load url)
 
         UserClickedMenuIcon ->
-            ( { model | isMenuPanelOpen = True }, Cmd.none )
+            { model | isMenuPanelOpen = True }
+                |> noCommand
 
         UserClickedOutsideMenuPanel ->
-            ( { model | isMenuPanelOpen = False }, Cmd.none )
+            { model | isMenuPanelOpen = False }
+                |> noCommand
+
+        UserClickedSafetyDetailsButton ->
+            { model | shouldShowSafetyDetails = not model.shouldShowSafetyDetails }
+                |> noCommand
 
         UserResizedWindow width height ->
-            ( { model | windowSize = { height = height, width = width }, isMenuPanelOpen = False }, Cmd.none )
+            { model | windowSize = { height = height, width = width }, isMenuPanelOpen = False }
+                |> noCommand
 
         UserTypedContactEmail email ->
-            ( { model | contactEmail = email }, Cmd.none )
+            { model | contactEmail = email }
+                |> noCommand
 
         UserTypedContactName name ->
-            ( { model | contactName = name }, Cmd.none )
+            { model | contactName = name }
+                |> noCommand
 
         UserTypedContactMessage message ->
-            ( { model | contactMessage = message }, Cmd.none )
+            { model | contactMessage = message }
+                |> noCommand
 
         UserSubmittedContactForm ->
             case validate contactValidator model of
                 Ok validModel ->
-                    ( { model | contactFormMessages = AssocList.empty }, sendContact validModel )
+                    { model | contactFormMessages = AssocList.empty }
+                        |> withCommand (sendContact validModel)
 
                 Err errors ->
-                    ( { model | contactFormMessages = AssocList.fromList errors }, Cmd.none )
+                    { model | contactFormMessages = AssocList.fromList errors }
+                        |> noCommand
 
 
 subscriptions : Model -> Sub Msg
