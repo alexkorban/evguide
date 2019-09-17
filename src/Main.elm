@@ -49,6 +49,7 @@ type Msg
     | UserClickedLink UrlRequest
     | UserClickedMenuIcon
     | UserClickedOutsideMenuPanel
+    | UserClickedRangeDetailsButton
     | UserClickedSafetyDetailsButton
     | UserChoseVehicleAvailabilityOption Vehicle.Availability
     | UserChoseVehicleSortOrder Vehicle.SortOrder
@@ -69,6 +70,7 @@ type alias Model =
     , navKey : Nav.Key
     , pageText : PageDict Msg
     , route : GuideRoute
+    , shouldShowRangeDetails : Bool
     , shouldShowSafetyDetails : Bool
     , vehicleAvailability : Vehicle.Availability
     , vehicleSortOrder : Vehicle.SortOrder
@@ -134,6 +136,7 @@ init flags url navKey =
       , navKey = navKey
       , pageText = Result.withDefault Dict.empty pageTextRes
       , route = Maybe.withDefault IndexPageRoute <| UrlParser.parse routeParser url
+      , shouldShowRangeDetails = False
       , shouldShowSafetyDetails = False
       , vehicleAvailability = AvailableAny
       , vehicleSortOrder = NameSort
@@ -223,6 +226,15 @@ vehicleDetails model vehicle =
         specItem label value =
             row [ width fill ] [ text label, el [ alignRight ] value ]
 
+        rangeSpecItem =
+            specItem "Range" <| Ui.textButton [ onClick UserClickedRangeDetailsButton ] <| text <| rangeAsString vehicle.range
+
+        rangeDetails =
+            paragraph []
+                [ text "Range is an EPA estimate (or an approximation of one) unless otherwise noted in vehicle description. "
+                , text "EPA estimates tend to be closer to real-world range compared to estimates made under NEDC or WLTP testing rules."
+                ]
+
         safetySpecItem =
             specItem "Safety" <| Ui.textButton [ onClick UserClickedSafetyDetailsButton ] <| text <| safetyRatingAsString vehicle.safetyRating
 
@@ -239,6 +251,14 @@ vehicleDetails model vehicle =
 
         spec =
             [ specItem "Range" <| text <| rangeAsString vehicle.range
+            , if model.shouldShowRangeDetails then
+                column [ width fill, spacing 5 ]
+                    [ rangeSpecItem
+                    , rangeDetails
+                    ]
+
+              else
+                rangeSpecItem
             , specItem "Price" <| text <| pricesAsString vehicle.price
             , specItem "Years" <| text <| yearsAsString vehicle.years
             , if model.shouldShowSafetyDetails then
@@ -761,7 +781,7 @@ withCommand cmd model =
 
 resetStateOnPageChange : Model -> Model
 resetStateOnPageChange model =
-    { model | isMenuPanelOpen = False, shouldShowSafetyDetails = False }
+    { model | isMenuPanelOpen = False, shouldShowRangeDetails = False, shouldShowSafetyDetails = False }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -817,6 +837,10 @@ update msg model =
 
         UserClickedOutsideMenuPanel ->
             { model | isMenuPanelOpen = False }
+                |> noCommand
+
+        UserClickedRangeDetailsButton ->
+            { model | shouldShowRangeDetails = not model.shouldShowRangeDetails }
                 |> noCommand
 
         UserClickedSafetyDetailsButton ->
