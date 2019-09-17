@@ -37,6 +37,7 @@ type alias Vehicle =
     , batteries : List Int
     , comment : Maybe String
     , count : Int
+    , dimensions : { length : Int, width : Int, height : Int }
     , make : String
     , model : String
     , price : SingleOrPair Int
@@ -168,6 +169,7 @@ data =
         , batteries = [ 95 ]
         , comment = Nothing
         , count = 62
+        , dimensions = { length = 4901, width = 1935, height = 1616 }
         , make = "Audi"
         , model = "e-tron"
         , price = Range 149000 180000
@@ -186,6 +188,7 @@ data =
           , batteries = [ 22, 33, 42 ]
           , comment = Just "246km range model coming in the near future"
           , count = 213
+          , dimensions = { length = 3999, width = 1775, height = 1578 }
           , make = "BMW"
           , model = "i3"
           , price = Range 35000 85000
@@ -204,6 +207,7 @@ data =
           , batteries = [ 28, 38 ]
           , comment = Just "300km range model coming in the near future"
           , count = 546
+          , dimensions = { length = 4470, width = 1820, height = 1460 }
           , make = "Hyundai"
           , model = "Ioniq"
           , price = Range 45000 60000
@@ -222,6 +226,7 @@ data =
           , batteries = [ 64 ]
           , comment = Nothing
           , count = 373
+          , dimensions = { length = 4180, width = 1800, height = 1570 }
           , make = "Hyundai"
           , model = "Kona"
           , price = Range 74000 78000
@@ -240,6 +245,7 @@ data =
           , batteries = [ 90 ]
           , comment = Nothing
           , count = 63
+          , dimensions = { length = 4682, width = 2139, height = 1565 }
           , make = "Jaguar"
           , model = "I-PACE"
           , price = Range 160000 195000
@@ -258,6 +264,7 @@ data =
           , batteries = [ 39, 64 ]
           , comment = Nothing
           , count = 58
+          , dimensions = { length = 4355, width = 1805, height = 1545 }
           , make = "Kia"
           , model = "Niro EV"
           , price = Range 68000 77000
@@ -276,6 +283,7 @@ data =
           , batteries = [ 27, 30 ]
           , comment = Nothing
           , count = 23
+          , dimensions = { length = 4140, width = 1800, height = 1593 }
           , make = "Kia"
           , model = "Soul EV"
           , price = RangeFrom 35000
@@ -294,6 +302,7 @@ data =
           , batteries = [ 56 ]
           , comment = Just "Range is manufacturer claim, not EPA"
           , count = 39
+          , dimensions = { length = 5700, width = 1998, height = 2345 }
           , make = "LDV"
           , model = "EV80"
           , price = Single 50000
@@ -312,6 +321,7 @@ data =
           , batteries = [ 11, 15, 16 ]
           , comment = Just "Also sold as Peugeot iOn & Citroën C-Zero"
           , count = 109
+          , dimensions = { length = 3395, width = 1475, height = 1600 }
           , make = "Mitsubishi"
           , model = "i-MiEV"
           , price = RangeFrom 11000
@@ -330,6 +340,7 @@ data =
           , batteries = [ 24, 40 ]
           , comment = Nothing
           , count = 369
+          , dimensions = { length = 4560, width = 1755, height = 1858 }
           , make = "Nissan"
           , model = "e-NV200"
           , price = Range 28000 65000
@@ -348,6 +359,7 @@ data =
           , batteries = [ 24, 30 ]
           , comment = Nothing
           , count = 8453
+          , dimensions = { length = 4445, width = 1770, height = 1550 }
           , make = "Nissan"
           , model = "Leaf"
           , price = Range 10000 30000
@@ -366,6 +378,7 @@ data =
           , batteries = [ 40, 62 ]
           , comment = Just "Longer range model coming in 2019"
           , count = 8160
+          , dimensions = { length = 4490, width = 1788, height = 1530 }
           , make = "Nissan"
           , model = "Leaf"
           , price = Range 50000 59000
@@ -384,6 +397,7 @@ data =
           , batteries = [ 22, 33 ]
           , comment = Nothing
           , count = 56
+          , dimensions = { length = 4666, width = 1830, height = 1802 }
           , make = "Renault"
           , model = "Kangoo"
           , price = Range 46000 75000
@@ -402,6 +416,7 @@ data =
           , batteries = [ 22, 41 ]
           , comment = Nothing
           , count = 118
+          , dimensions = { length = 4084, width = 1730, height = 1562 }
           , make = "Renault"
           , model = "Zoe"
           , price = Range 30000 69000
@@ -420,6 +435,7 @@ data =
           , batteries = [ 62, 75 ]
           , comment = Nothing
           , count = 60
+          , dimensions = { length = 4690, width = 1850, height = 1440 }
           , make = "Tesla"
           , model = "Model 3"
           , price = Range 74000 113000
@@ -438,6 +454,7 @@ data =
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
           , count = 342
+          , dimensions = { length = 4980, width = 2189, height = 1440 }
           , make = "Tesla"
           , model = "Model S"
           , price = Range 71000 189000
@@ -456,6 +473,7 @@ data =
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
           , count = 318
+          , dimensions = { length = 5036, width = 1999, height = 1684 }
           , make = "Tesla"
           , model = "Model X"
           , price = Range 110000 207000
@@ -474,6 +492,7 @@ data =
           , batteries = [ 24, 36 ]
           , comment = Nothing
           , count = 257
+          , dimensions = { length = 4270, width = 1799, height = 1450 }
           , make = "Volkswagen"
           , model = "e-Golf"
           , price = Range 40000 69000
