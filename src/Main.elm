@@ -249,6 +249,12 @@ vehicleDetails model vehicle =
                 , paragraph [] [ text "Safety requirements are continuously strengthened, so a 5-star rated vehicle in 2019 is safer than a 5-star rated vehicle from, say, 2011." ]
                 ]
 
+        dimensionsAsStr =
+            [ "L " ++ floatAsStr 2 (toFloat vehicle.dimensions.length / 1000) ++ "m"
+            , "W " ++ floatAsStr 2 (toFloat vehicle.dimensions.width / 1000) ++ "m"
+            , "H " ++ floatAsStr 2 (toFloat vehicle.dimensions.height / 1000) ++ "m"
+            ]
+
         spec =
             [ specItem "Range" <| text <| rangeAsString vehicle.range
             , if model.shouldShowRangeDetails then
@@ -271,6 +277,7 @@ vehicleDetails model vehicle =
                 safetySpecItem
             , specItem "Batteries" <| text <| intListAsString vehicle.batteries ++ " kWh"
             , specItem "Seats" <| text <| intListAsString vehicle.seats
+            , specItem "Dimensions" <| column [ spacingXY 0 3 ] <| List.map (el [ alignRight ] << text) dimensionsAsStr
             , specItem "No. in NZ" <| text <| String.fromInt vehicle.count
             ]
                 |> List.intersperse (el [ width fill, height <| px 1, Background.color lightGrey ] none)

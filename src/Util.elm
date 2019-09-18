@@ -5,21 +5,23 @@ import Http
 import String.Extra as String
 
 
+floatAsStr : Int -> Float -> String
+floatAsStr decimals float =
+    format
+        { decimals = decimals
+        , thousandSeparator = ","
+        , decimalSeparator = "."
+        , negativePrefix = "−"
+        , negativeSuffix = ""
+        , positivePrefix = ""
+        , positiveSuffix = ""
+        }
+        float
+
+
 intAsMoneyStr : Int -> String
 intAsMoneyStr n =
-    "$"
-        ++ (format
-                { decimals = 0
-                , thousandSeparator = ","
-                , decimalSeparator = "."
-                , negativePrefix = "−"
-                , negativeSuffix = ""
-                , positivePrefix = ""
-                , positiveSuffix = ""
-                }
-            <|
-                toFloat n
-           )
+    "$" ++ (floatAsStr 0 <| toFloat n)
 
 
 intListAsString : List Int -> String
