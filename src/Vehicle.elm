@@ -168,7 +168,7 @@ data =
         { id = "audi/e-tron/2019"
         , batteries = [ 95 ]
         , comment = Nothing
-        , count = 62
+        , count = 74
         , dimensions = { length = 4901, width = 1935, height = 1616 }
         , make = "Audi"
         , model = "e-tron"
@@ -187,7 +187,7 @@ data =
         [ { id = "bmw/i3/2013"
           , batteries = [ 22, 33, 42 ]
           , comment = Just "246km range model coming in the near future"
-          , count = 213
+          , count = 219
           , dimensions = { length = 3999, width = 1775, height = 1578 }
           , make = "BMW"
           , model = "i3"
@@ -206,7 +206,7 @@ data =
         , { id = "hyundai/ioniq/2017"
           , batteries = [ 28, 38 ]
           , comment = Just "300km range model coming in the near future"
-          , count = 546
+          , count = 551
           , dimensions = { length = 4470, width = 1820, height = 1460 }
           , make = "Hyundai"
           , model = "Ioniq"
@@ -225,7 +225,7 @@ data =
         , { id = "hyundai/kona/2019"
           , batteries = [ 64 ]
           , comment = Nothing
-          , count = 373
+          , count = 429
           , dimensions = { length = 4180, width = 1800, height = 1570 }
           , make = "Hyundai"
           , model = "Kona"
@@ -244,7 +244,7 @@ data =
         , { id = "jaguar/i-pace/2019"
           , batteries = [ 90 ]
           , comment = Nothing
-          , count = 63
+          , count = 75
           , dimensions = { length = 4682, width = 2139, height = 1565 }
           , make = "Jaguar"
           , model = "I-PACE"
@@ -263,7 +263,7 @@ data =
         , { id = "kia/niro-ev/2019"
           , batteries = [ 39, 64 ]
           , comment = Nothing
-          , count = 58
+          , count = 66
           , dimensions = { length = 4355, width = 1805, height = 1545 }
           , make = "Kia"
           , model = "Niro EV"
@@ -301,7 +301,7 @@ data =
         , { id = "ldv/ev80/2019"
           , batteries = [ 56 ]
           , comment = Just "Range is manufacturer claim, not EPA"
-          , count = 39
+          , count = 41
           , dimensions = { length = 5700, width = 1998, height = 2345 }
           , make = "LDV"
           , model = "EV80"
@@ -320,7 +320,7 @@ data =
         , { id = "mitsubishi/i-miev/2009"
           , batteries = [ 11, 15, 16 ]
           , comment = Just "Also sold as Peugeot iOn & Citroën C-Zero"
-          , count = 109
+          , count = 110
           , dimensions = { length = 3395, width = 1475, height = 1600 }
           , make = "Mitsubishi"
           , model = "i-MiEV"
@@ -339,7 +339,7 @@ data =
         , { id = "nissan/e-nv200/2014"
           , batteries = [ 24, 40 ]
           , comment = Nothing
-          , count = 369
+          , count = 377
           , dimensions = { length = 4560, width = 1755, height = 1858 }
           , make = "Nissan"
           , model = "e-NV200"
@@ -358,7 +358,7 @@ data =
         , { id = "nissan/leaf/2011"
           , batteries = [ 24, 30 ]
           , comment = Nothing
-          , count = 8453
+          , count = 8766
           , dimensions = { length = 4445, width = 1770, height = 1550 }
           , make = "Nissan"
           , model = "Leaf"
@@ -396,7 +396,7 @@ data =
         , { id = "renault/kangoo/2011"
           , batteries = [ 22, 33 ]
           , comment = Nothing
-          , count = 56
+          , count = 57
           , dimensions = { length = 4666, width = 1830, height = 1802 }
           , make = "Renault"
           , model = "Kangoo"
@@ -415,7 +415,7 @@ data =
         , { id = "renault/zoe/2013"
           , batteries = [ 22, 41 ]
           , comment = Nothing
-          , count = 118
+          , count = 119
           , dimensions = { length = 4084, width = 1730, height = 1562 }
           , make = "Renault"
           , model = "Zoe"
@@ -434,7 +434,7 @@ data =
         , { id = "tesla/model-3/2019"
           , batteries = [ 62, 75 ]
           , comment = Nothing
-          , count = 60
+          , count = 419
           , dimensions = { length = 4690, width = 1850, height = 1440 }
           , make = "Tesla"
           , model = "Model 3"
@@ -453,7 +453,7 @@ data =
         , { id = "tesla/model-s/2014"
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
-          , count = 342
+          , count = 350
           , dimensions = { length = 4980, width = 2189, height = 1440 }
           , make = "Tesla"
           , model = "Model S"
@@ -472,7 +472,7 @@ data =
         , { id = "tesla/model-x/2017"
           , batteries = [ 75, 85, 90, 100 ]
           , comment = Nothing
-          , count = 318
+          , count = 331
           , dimensions = { length = 5036, width = 1999, height = 1684 }
           , make = "Tesla"
           , model = "Model X"
@@ -491,7 +491,7 @@ data =
         , { id = "volkswagen/e-golf/2015"
           , batteries = [ 24, 36 ]
           , comment = Nothing
-          , count = 257
+          , count = 265
           , dimensions = { length = 4270, width = 1799, height = 1450 }
           , make = "Volkswagen"
           , model = "e-Golf"
