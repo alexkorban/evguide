@@ -98,7 +98,7 @@ link attrs params =
 
 textButton : List (Attribute msg) -> Element msg -> Element msg
 textButton attrs content =
-    el ([ Font.color lightBlue ] ++ attrs) content
+    el ([ Font.color lightBlue, pointer ] ++ attrs) content
 
 
 

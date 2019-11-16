@@ -1,0 +1,23 @@
+{
+  "name": "evguide",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "elm-live src/Main.elm -u -d public  -- --output public/elm.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexkorban/evguide.git"
+  },
+  "author": "",
+  "license": "SEE LICENSE IN licence.txt",
+  "bugs": {
+    "url": "https://github.com/alexkorban/evguide/issues"
+  },
+  "homepage": "https://github.com/alexkorban/evguide#readme",
+  "dependencies": {
+    "elm-mapbox": "4.1.0"
+  }
+}

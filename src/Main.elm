@@ -19,6 +19,9 @@ import ElmMarkup
 import Html exposing (Html)
 import Http
 import List.Extra as List
+import MapCommands
+import Mapbox.Element as Mapbox
+import Mapbox.Style as Mapbox
 import Task
 import Types exposing (..)
 import Ui
@@ -196,6 +199,18 @@ vehicleCard vehicle =
                 , specSummary
                 ]
         }
+
+
+rangeMap : Element Msg
+rangeMap =
+    el [ width fill, height <| px 500 ] <|
+        html <|
+            Mapbox.map
+                [ Mapbox.maxZoom 5
+                , Mapbox.id "my-map"
+                , Mapbox.eventFeaturesLayers [ "changes" ]
+                ]
+                Mapbox.light
 
 
 vehicleDetails : Model -> Vehicle -> List (Element Msg)
@@ -1359,6 +1374,7 @@ pageTextMarkup =
             - Jaguar I-PACE
             - Kia Soul (from 2019), Kia Niro BEV 
             - Hyundai Ioniq and Kona
+            - MG ZS
             - Tesla Model 3 
             - Volkswagen eGolf
 
@@ -1382,9 +1398,12 @@ pageTextMarkup =
 
         Here is the current map of ChargeNet chargers: 
 
-        |> Iframe 
-            url = https://www.google.com/maps/d/embed?mid=1iTUqNusVOcAfYb0Y4NWeKq0pnCg
-            height = 500
+        |> Image 
+            url = /img/charge-net-map.png
+            description = ChargeNet map
+            width = 600
+            border = False
+            align = Center
 
         In addition to the above options: 
 
